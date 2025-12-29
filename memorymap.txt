@@ -1,0 +1,29 @@
+
+TBLD - @ 7E00 - ray directions tables for specific pieces
+FONT - @ 6800 - text icons ($400 bytes)
+LASER.SHAPES - @ 8000 - game icons ($fff bytes)
+    - icons are 3 bytes (21 pixels) wide and 19 lines high
+    - 57 bytes stored in 64 byte chunks
+
+//ANCHOR[id=loader] - packed DEFLECT.SYSTEM file layout
+--------- DIAFLW.SYSTEM -----
+2000 - Unpack the game bits into their runtime locations & start it
+    Reads from 2400-5B00 and stores to 6000-9700  (3700 bytes)
+    JMP 6000
+(3C00 offset and full length of 3B00)
+
+2000 - HGR screen
+6000 - GAME (GAME.S)
+6C00 - FONT binary ($400 bytes)
+7000 - GUNCODE - AKA 'RAY'
+7D00 - STARTSAVE saved (same content as START.S)
+7E00 - DXTBL (100 bytes) - TBLD
+7F00 - DYTBL (100 bytes) - TBLD
+8000 - LASER.SHAPES - icons (editor with ICONEDIT.abas)
+9000 - LASER.DRAW - icon drawing code (LASER.S)
+9200 - BOARDBASE current play board from START.S
+9280 - BOARDSAVE saved board...
+9300 - DIRBASE - from GFXTABLES
+9400 - LOWS - table of HGR scanline Y starts LO
+9500 - HIGHS - table of HGR scanline Y starts HI
+

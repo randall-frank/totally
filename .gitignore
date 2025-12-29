@@ -1,0 +1,9 @@
+merlin*/
+ciderpres*/
+bin/_*
+bin/TOTALLY*
+/*.2mg
+/*.po
+.vscode/
+src/VERSION.S
+original_binary/
