@@ -1,29 +1,67 @@
 
-TBLD - @ 7E00 - ray directions tables for specific pieces
-FONT - @ 6800 - text icons ($400 bytes)
-LASER.SHAPES - @ 8000 - game icons ($fff bytes)
-    - icons are 3 bytes (21 pixels) wide and 19 lines high
-    - 57 bytes stored in 64 byte chunks
 
-//ANCHOR[id=loader] - packed DEFLECT.SYSTEM file layout
---------- DIAFLW.SYSTEM -----
-2000 - Unpack the game bits into their runtime locations & start it
-    Reads from 2400-5B00 and stores to 6000-9700  (3700 bytes)
-    JMP 6000
-(3C00 offset and full length of 3B00)
 
-2000 - HGR screen
-6000 - GAME (GAME.S)
-6C00 - FONT binary ($400 bytes)
-7000 - GUNCODE - AKA 'RAY'
-7D00 - STARTSAVE saved (same content as START.S)
-7E00 - DXTBL (100 bytes) - TBLD
-7F00 - DYTBL (100 bytes) - TBLD
-8000 - LASER.SHAPES - icons (editor with ICONEDIT.abas)
-9000 - LASER.DRAW - icon drawing code (LASER.S)
-9200 - BOARDBASE current play board from START.S
-9280 - BOARDSAVE saved board...
-9300 - DIRBASE - from GFXTABLES
-9400 - LOWS - table of HGR scanline Y starts LO
-9500 - HIGHS - table of HGR scanline Y starts HI
+GetInputBtn -> can be JSR 1Df0 or LDA C000   ReadJoystickBtn
+
+
+DivideBy7 - divide Acc by 7 Convert X pos into byte(X),bits(Y)
+return remainder in Y, divisor in X
+
+Images are generally pre-shifted tables. 
+
+3 bytes/scanline, 9 rows -> 27 bytes/img + 5 unused bytes = 32bytes/image
+
+Columns:
+$1D=last white bar
+$21=current score and "fuel bar"
+$25=highscore and "ships"
+
+
+$0C00 - program start - setup display, read highscores from disk
+$0D00 - play a game
+$0D79 - next level 
+
+$1000 - scanline HI table
+$10C0 - scanline LO table
+
+$1900 - MassDraw 'highscore' image routine
+$1930 - image data
+
+$1B00 - ExplodeImage0 Explosion images ($20/image) 3 images
+
+$1F00 - ship images = $20*7 = $E0 bytes
+
+$2000 - $3fff screen
+
+$4790 - Phase 1 Boss Image (2 bytes wide, 16 bytes tall = $20bytes)
+
+$4900 - Massdraw Game over image draw
+$4930 - image data
+
+$4c00 - Main loop, display high score
+$4c03 - Begin new game (K)eyboard, (J)oystick 
+
+$55f0 - MassDraw game title
+$5700 - image data
+
+$6200 - initial dots X table
+$6210 - initial dots Y table
+$6400 - current dots X table
+$6410 - current dots Y table
+
+$6700 - I/O Buffer for highscores
+
+$7000 - "entity" images - 32 bytes/image, 1 image/level, 16 levels
+      - preshifted images 256 bytes/level ($1000 bytes)
+$8000 - EOF
+
+Note: there may be 20 entities in the source
+
+TODO: 
+
+rework DrawExplodeImage to allow other than $1B00
+rework DrawPlayerShip to allow other than $1F00
+replace divide by 7 with tables
+replace random number generator $6900,$6A00?
+
 
