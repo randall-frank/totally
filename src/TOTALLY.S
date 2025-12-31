@@ -8497,8 +8497,6 @@ GenYAddr lda   ScanlineTblHI,x
          sta   TGTLO
          rts
 
-         dfb   $00
-
 ScrollWallMissile
          lda   MissleXByte
          cmp   #$1a       ;Hit wall?
@@ -8522,155 +8520,12 @@ ScrollWallMissile
          sta   (TGTLO),y
          rts
 
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $a2
-         dfb   $b0
-         dfb   $20
-         dfb   $24
-         dfb   $48
-         dfb   $a0
-         dfb   $23
-         dfb   $a9
-         dfb   $80
-         dfb   $91
-         dfb   $26
-         dfb   $ca
-         dfb   $d0
-         dfb   $f4
-         dfb   $60
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-
 DiskUpdate
          lda   #$01
          jsr   DOSrwts
          lda   #$00
          jsr   DOSrwts
          jmp   HighScoreCheck
-
-         dfb   $ff
-         dfb   $00
-         dfb   $00
 
 EndOfGame
          lda   #$0b
@@ -8679,9 +8534,6 @@ EndOfGame
          sta   YTMP
          jsr   DrawGameOverImage
          jmp   DiskUpdate
-
-         dfb   $00
-         dfb   $00
 
 DrawGameOverImage
          lda   GameOverImgWidth
@@ -8708,13 +8560,17 @@ DrawGameOverImage
          inc   YTMP
          dec   $fd
          bne   :nextline
+         sta   KBDSTRB
+:key     lda   KBD
+         bpl   :key
+         sta   KBDSTRB
          rts
 
 GameOverImgWidth
          dfb   $09
 GameOverImgHeight
          dfb   $19
-GameOverImg
+GameOverImg               ; Image payload of $e1 bytes
          ds    10
          dfb   $54
          dfb   $00
@@ -8888,242 +8744,6 @@ GameOverImg
          dfb   $02
          ds    9
          dfb   $02
-         dfb   $05
-         dfb   $02
-         dfb   $05
-         dfb   $00
-         dfb   $05
-         dfb   $02
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $00
-         dfb   $05
-         dfb   $02
-         dfb   $05
-         dfb   $02
-         dfb   $05
-         dfb   $00
-         dfb   $05
-         dfb   $02
-         dfb   $00
-         dfb   $05
-         dfb   $02
-         dfb   $05
-         dfb   $02
-         dfb   $55
-         dfb   $00
-         dfb   $55
-         dfb   $00
-         dfb   $00
-         dfb   $05
-         dfb   $02
-         dfb   $05
-         dfb   $02
-         dfb   $05
-         dfb   $00
-         dfb   $05
-         dfb   $00
-         dfb   $00
-         dfb   $05
-         dfb   $02
-         dfb   $05
-         dfb   $02
-         dfb   $05
-         dfb   $00
-         dfb   $15
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
 
 HighScoreCheck
          lda   SCOREHI
