@@ -1,4 +1,6 @@
 
+Issues:
+  Game too easy, scores too high
 
 
 GetInputBtn -> can be JSR 1Df0 or LDA C000   ReadJoystickBtn
@@ -16,6 +18,11 @@ $1D=last white bar
 $21=current score and "fuel bar"
 $25=highscore and "ships"
 
+
+
+This was the original program layout in memory.  There were a LOT of unused
+pages, etc between things.  Moving to assembly (from raw binary), most of
+those issues have been addressed and the assembly code is MUCH tighter now.
 
 $0C00 - program start - setup display, read highscores from disk
 $0D00 - play a game
