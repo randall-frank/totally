@@ -1,2 +1,9 @@
-- Add a computer player option
-- Save/Load a game
+- need to add version to the splash screen
+- more levels?
+- lower scoring for things
+- improved ship pathing
+- convert to proper RND function $6900,$6A00?
+- smooth/random dot motion (bit-shifting)
+- remove level 9?
+- button0 - treat as space or (J) key :)
+- new I/O

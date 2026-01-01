@@ -64,11 +64,6 @@ $8000 - EOF
 
 Note: there may be 20 entities in the source
 
-TODO: 
 
-rework DrawExplodeImage to allow other than $1B00
-rework DrawPlayerShip to allow other than $1F00
-replace divide by 7 with tables
-replace random number generator $6900,$6A00?
 
 
