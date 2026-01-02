@@ -2739,10 +2739,18 @@ DrawGameOverImage
          inc   YTMP
          dec   $fd
          bne   :nextline
+         jmp   WaitKeyOrBtn
+
+WaitKeyOrBtn
          sta   KBDSTRB
-:key     lda   KBD
-         bpl   :key
-         sta   KBDSTRB
+:loop    lda   KBD
+         bmi   :done
+         lda   BUTN0
+         bmi   :done
+         jmp   :loop
+:done    sta   KBDSTRB
+:loop2   lda   BUTN0      ; wait for button to be released
+         bmi   :loop2
          rts
 
 GameOverImgWidth
@@ -3036,21 +3044,22 @@ NewHiScore
 
 DisplayHighScore
          jsr   HighScoreUpdate
+         sta   KBDSTRB
+
 StartTotally
+         lda   BUTN0
+         bmi   :dojoy
          lda   KBD
-         cmp   #$ca       ;Joystick?
+         cmp   #$ca       ;'J'?
          bne   :notjoystick
-         jsr   INITJOY
+:dojoy   jsr   INITJOY
          jmp   PlayAGame
 
 :notjoystick
-         cmp   #$cb       ;Keyboard
-         bne   UnknownKey
+         cmp   #$cb       ;'K'?
+         bne   StartTotally
          jsr   INITKBD
          jmp   PlayAGame
-
-UnknownKey
-         jmp   StartTotally
 
 HighScoreUpdate
          jsr   DisplayHighList
@@ -3571,11 +3580,7 @@ L65BF    lda   #$10
          jmp   :next
 
 :waitkeyandret
-         sta   KBDSTRB
-:loop    lda   KBD
-         asl   A
-         bcc   :loop
-         rts
+         jmp   WaitKeyOrBtn
 
 DrawHiscoreLine
          lda   #$0f
