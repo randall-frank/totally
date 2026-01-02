@@ -33,7 +33,10 @@ GLYPH       equ   $fa
 TMPHI       equ   $fb
 NEntityKilled equ   $ff
 NEntityScored equ   $6f
-DOSRWTS     equ   $03d9
+
+* ProDOS entry point
+
+MLI         equ   $bf00
 
 * Soft switches
 
@@ -45,6 +48,10 @@ MIXCLR      equ   $c052      ;RW display full screen
 TXTPAGE1    equ   $c054      ;RW display page 1
 HIRES       equ   $c057      ;RW display hi-res graphics
 BUTN0       equ   $c061      ;R switch input 0 / open-apple
+BUTN1       equ   $c062      ;R switch input 1 / closed-apple
+PADDL0      equ   $C064      ; Read paddle 0 soft switch
+PADDL1      equ   $C065      ; Read paddle 1 soft switch
+PTRIG       equ   $C070      ; Trigger (start) paddle measurement
 
 * ROM routines
 
@@ -52,7 +59,7 @@ REBOOT      equ   $e000
 RAMRANDOM   equ   $efae
 PADDLE_READ equ   $fb1e      ;read paddle specified by X-reg, return in Y-reg
 
-         org   $2000
+         org   $2000      ; start of all semi-well behaved .SYSTEM files
 
 * This is the HGR1 screen location ($2000)
 * Place the initial screen here with a jmp
@@ -65,72 +72,17 @@ PADDLE_READ equ   $fb1e      ;read paddle specified by X-reg, return in Y-reg
          lda   HIRES
          lda   MIXCLR
          lda   TXTPAGE1
+         jsr   RandomInit
          lda   #$00
          sta   $f3
          sta   $f4
          sta   $f5
          lda   KBDSTRB
-         lda   #$00       ;Read high scores/check disk
-         jsr   DOSrwts
+         jsr   InitPrefix ;Init the I/O system
+         jsr   ReadHS     ;Read high scores/check disk
          jmp   StartTotally
 
-DOSrwts  cmp   #$01
-         bne   :readsector
-         lda   #>DOSrwtsWriteTable
-         ldy   #<DOSrwtsWriteTable
-         jsr   DOSRWTS
-         rts
-
-:readsector
-         lda   #>DOSrwtsReadTable
-         ldy   #<DOSrwtsReadTable
-         jsr   DOSRWTS
-         ldy   #$0f
-:next    lda   IOBUFFER,y
-         cmp   MAGIC,y
-         beq   :ok
-         jmp   REBOOT
-
-:ok      dey
-         bne   :next
-         rts
-
-DOSrwtsWriteTable
-         dfb   $01        ;table type=1
-         dfb   $60        ;slot 6
-         dfb   $01        ;drive 1
-         dfb   $00        ;volume any
-         dfb   $11        ;track 17
-         dfb   $05        ;sector 5
-         dw    DCT        ;DCT is at $0c96
-         dw    IOBUFFER   ;IO buffer $6700
-         dfb   $00
-         dfb   $00
-         dfb   $02        ;Write sector
-         dfb   $03        ;return code
-         dfb   $fe        ;volume out
-         dfb   $60        ;prev slot
-         dfb   $01        ;prev drive
-DOSrwtsReadTable
-         dfb   $01        ;tale type=1
-         dfb   $60        ;slot 6
-         dfb   $01        ;drive 1
-         dfb   $00        ;volume any
-         dfb   $11        ;track 17
-         dfb   $05        ;sector 5
-         dw    DCT        ;DCT
-         dw    IOBUFFER   ;IO buffer 6700
-         dfb   $00
-         dfb   $00
-         dfb   $01        ;Read sector
-         dfb   $00        ;return code
-         dfb   $00        ;volume
-         dfb   $60        ;prev slot
-         dfb   $01        ;prev drive
 MAGIC    asc   "(C)1983BYR.FRANK"
-DCT      dfb   $00        ;00=disk II device
-         dfb   $01        ;01 phases pre track
-         dw    $d8ef      ;Motor on time
 
 PlayAGame
          lda   #$03
@@ -2750,10 +2702,8 @@ ScrollWallMissile
          rts
 
 DiskUpdate
-         lda   #$01
-         jsr   DOSrwts
-         lda   #$00
-         jsr   DOSrwts
+         jsr   SaveHS
+         jsr   ReadHS
          jmp   HighScoreCheck
 
 EndOfGame
@@ -3108,8 +3058,7 @@ HighScoreUpdate
          jsr   DrawEmptyPlayfield
          jsr   DrawGameTitle
          lda   KBDSTRB
-         lda   #$01       ;Save highscore sector
-         jmp   DOSrwts
+         jmp   SaveHS     ;Save highscore sector
 
 INITJOY  lda   #>ReadDirJoy
          sta   UpdatePhase0Loop+2
@@ -4028,6 +3977,185 @@ DivideBy7
 
          put   DIV_SEVEN.S
          
+* New random number generator
+* Seed with some initial value
+
+RandomInit 
+         lda $4e          ; seed the random number generator
+         sta r1           ; based on delay between keypresses
+         sta r3
+         lda $4f
+         sta r2
+         sta r4
+         ldx #$20         ; generate a few random numbers
+:loop    jsr Random         ; to kick things off
+         dex
+         bne :loop
+         rts
+
+r1       dfb 0
+r2       dfb 0
+r3       dfb 0
+r4       dfb 0
+
+* return a random byte 
+
+Random   
+         ror r4           ; bit 25 to carry
+         lda r3           ; shift left 8 bits
+         sta r4
+         lda r2
+         sta r3
+         lda r1
+         sta r2
+         lda r4           ; get original bits 17-24
+         ror              ; now bits 18-25 in acc
+         rol r1           ; r1 holds bits 1-7
+         eor r1           ; seven bits at once
+         ror r4           ; shift right by one bit
+         ror r3
+         ror r2
+         ror
+         sta r1
+         rts
+
+* Read both joystick axes at the same time (and takes 
+* a deterministic amount of time).  The effective range
+* changes with 0=low, ~51=centered, ~114=high
+
+JoystickRead
+        ldy #$00    ; initialize loop counter to 0 (y acts as the result here)
+        sty JOY_X   ; clear result storage for X
+        sty JOY_Y   ; clear result storage for Y
+        lda PTRIG   ; trigger the paddle timing cycle (starts the measurement)
+
+:loop
+        lda PADDL0  ; check the status of paddle 0
+        bmi :set0   ; if high bit is set (cap discharged), branch to set value
+        nop         ; (padding for consistent timing)
+        bpl :nop0   ; branch always (takes consistent time)
+
+:set0
+        sty JOY_X   ; store the current loop count as the paddle 0 value
+:nop0
+        ; (padding nops or other instructions to ensure equal cycle count between reads)
+        lda PADDL1  ; check the status of paddle 1
+        bmi :set1   ; if high bit set, branch to set value
+        nop         ; (padding)
+        bpl :nop1   ; branch always
+
+:set1
+        sty JOY_Y   ; store current loop count as the paddle 1 value
+:nop1
+        ; (padding)
+        iny         ; increment loop counter
+        cpy #$7f    ; check if the loop count has reached the threshold
+        bne :loop   ; if not, continue polling
+        rts         ; return from subroutine
+
+InitPrefix
+         jsr    MLI
+         dfb    $2b
+         da     PrefixParams
+         jsr    MLI
+         bcs    :error
+         dfb    $2c
+         da     PrefixParams
+:error   rts
+
+ReadHS   jsr    MLI   ; open to read, failure is ok
+         dfb    $c8
+         da     OpenPraams
+         bcs    :error
+         lda    RefNum
+         sta    RefNumR
+         sta    RefNumC
+         jsr    MLI   ; read 256 bytes
+         dfb    $ca
+         da     ReadParams
+         jsr    MLI   ; close
+         dfb    $cc
+         da     CloseParams
+         ldy   #$0f
+:next    lda   IOBUFFER,y
+         cmp   MAGIC,y
+         beq   :error
+         dey
+         bne   :next
+:error   rts
+
+SaveHS   jsr    MLI   ; open to write on failure, try create
+         dfb    $c8
+         da     OpenPraams
+         sta    $300
+         bcc    :ok
+         jsr    MLI   ; create the file
+         dfb    $c0
+         da     CreatePraams
+         sta    $301
+         jsr    MLI   ; open to write, failure is ok skip
+         dfb    $c8
+         da     OpenPraams
+         sta    $302
+         bcs    :error
+:ok      lda    RefNum
+         sta    RefNumW
+         sta    RefNumC
+         jsr    MLI   ; write 256 bytes
+         dfb    $cb
+         da     WriteParams
+         sta    $303
+         jsr    MLI   ; close
+         dfb    $cc
+         da     CloseParams
+         sta   $304
+:error   rts
+
+Filename dfb   $0c
+         asc   'TOTALLY.HIGH   '
+
+PrefixParams
+         dfb   1
+         dw    PDOS_io_buffer
+
+OpenPraams
+         dfb   3
+         dw    Filename
+         dw    PDOS_io_buffer
+RefNum   dfb   0
+
+CreatePraams
+         dfb   7
+         dw    Filename
+         dfb   $c3
+         dfb   $06
+         dfb   0,0
+         dfb   1
+         dfb   0,0
+         dfb   0,0
+
+ReadParams
+         dfb   4
+RefNumR  dfb   0
+         dw    IOBUFFER   ;IO buffer
+         dw    $0100
+         dw    $0000
+
+WriteParams
+         dfb   4
+RefNumW  dfb   0
+         dw    IOBUFFER   ;IO buffer
+         dw    $0100
+         dw    $0000
+
+CloseParams
+         dfb   1
+RefNumC  dfb   0
+
+         ds    \
+PDOS_io_buffer
+         ds    1024
+
 ScoreTable                ; TODO: reduce all numbers (to lower total score)
          dfb   $15        ;score amount per level??? per ship??? 16 levels
          dfb   $20
