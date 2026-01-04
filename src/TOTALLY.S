@@ -1,5 +1,5 @@
-         dsk   ../bin/TOTALLY.SYSTEM#ff2000
-         typ   $06
+            dsk   ../bin/TOTALLY.SYSTEM#ff2000
+            typ   $06
          
 PlayerX     equ   $06
 PlayerY     equ   $07
@@ -28,6 +28,9 @@ Lives       equ   $e7
 SCORELO     equ   $f0
 SCOREMID    equ   $f1
 SCOREHI     equ   $f2
+HISCORELO   equ   $f3
+HISCOREMID  equ   $f4
+HISCOREHI   equ   $f5
 XTMP        equ   $f8
 YTMP        equ   $f9
 GLYPH       equ   $fa
@@ -68,15 +71,15 @@ PADDLE_READ equ   $fb1e      ;read paddle specified by X-reg, return in Y-reg
 
          put   INITIAL.SCREEN.S
 
-         lda   TXTCLR
+         lda   TXTCLR     ; This starts just after initial screen restore ~$4000
          lda   HIRES
          lda   MIXCLR
          lda   TXTPAGE1
          jsr   RandomInit
          lda   #$00
-         sta   $f3
-         sta   $f4
-         sta   $f5
+         sta   HISCORELO
+         sta   HISCOREMID
+         sta   HISCOREHI
          lda   KBDSTRB
          jsr   InitPrefix ;Init the I/O system
          jsr   ReadHS     ;Read high scores/check disk
@@ -209,10 +212,6 @@ DelayOneClick
          bne   :delay
          sta   SPKR
          rts
-
-         dfb   $ff
-         dfb   $00
-         dfb   $00
 
 FuelDecrement
          dec   FuelCounter
@@ -2540,38 +2539,38 @@ HighScoreCheck
          nop
          nop
          tay
-         cpy   $f5
+         cpy   HISCOREHI
          beq   :testmid
          jmp   :checklo
 
 :looplo  dey
-:checklo cpy   $f5
+:checklo cpy   HISCOREHI
          beq   NewHiScore
          cpy   #$00
          bne   :looplo
          jmp   DisplayHighScore
 
 :testmid ldy   SCOREMID
-         cpy   $f4
+         cpy   HISCOREMID
          beq   :testlow
          jmp   :checkmid
 
 :loopmid dey
 :checkmid
-         cpy   $f4
+         cpy   HISCOREMID
          beq   NewHiScore
          cpy   #$00
          bne   :loopmid
 :tie     jmp   DisplayHighScore
 
 :testlow ldy   SCORELO
-         cpy   $f3
+         cpy   HISCORELO
          beq   :tie
          jmp   :checklo1
 
 :looplo1 dey
 :checklo1
-         cpy   $f3
+         cpy   HISCORELO
          beq   NewHiScore
          cpy   #$00
          bne   :looplo1
@@ -2579,16 +2578,16 @@ HighScoreCheck
 
 NewHiScore
          lda   SCOREHI
-         sta   $f5
+         sta   HISCOREHI
          lda   SCOREMID
-         sta   $f4
+         sta   HISCOREMID
          lda   SCORELO
-         sta   $f3
+         sta   HISCORELO
          lda   #$25
          sta   XTMP
          lda   #$4d
          sta   YTMP
-         lda   $f3
+         lda   HISCORELO
          and   #$0f
          sta   GLYPH
          jsr   DrawDigit
@@ -2596,7 +2595,7 @@ NewHiScore
          sta   XTMP
          lda   #$3f
          sta   YTMP
-         lda   $f3
+         lda   HISCORELO
          lsr   A
          lsr   A
          lsr   A
@@ -2607,7 +2606,7 @@ NewHiScore
          sta   XTMP
          lda   #$31
          sta   YTMP
-         lda   $f4
+         lda   HISCOREMID
          and   #$0f
          sta   GLYPH
          jsr   DrawDigit
@@ -2615,7 +2614,7 @@ NewHiScore
          sta   XTMP
          lda   #$23
          sta   YTMP
-         lda   $f4
+         lda   HISCOREMID
          lsr   A
          lsr   A
          lsr   A
@@ -2626,7 +2625,7 @@ NewHiScore
          sta   XTMP
          lda   #$15
          sta   YTMP
-         lda   $f5
+         lda   HISCOREHI
          and   #$0f
          sta   GLYPH
          jsr   DrawDigit
@@ -2634,7 +2633,7 @@ NewHiScore
          sta   XTMP
          lda   #$07
          sta   YTMP
-         lda   $f5
+         lda   HISCOREHI
          lsr   A
          lsr   A
          lsr   A
@@ -3761,10 +3760,10 @@ CloseParams
 RefNumC  dfb   0
 
          ds    \
-PDOS_io_buffer
+PDOS_io_buffer            ; ProDOS I/O buffer: 1K, page aligned
          ds    1024
 
-ScoreTable                ; TODO: reduce all numbers (to lower total score)
+ScoreTable                
          dfb   $01        ;score amount per level??? per ship??? 16 levels
          dfb   $02
          dfb   $03
