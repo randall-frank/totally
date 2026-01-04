@@ -25,12 +25,17 @@ if not prerequisites:
 
 # Set the version number and start the build process
 # Must be 5 characters
-version = "1.0.0"
-
+version = [1,0,0]
+s=""
+for v in version:
+    s += f"{int(v):02x}0a"
+s = s[:-2] + "ff"
+version = f"{version[0]}.{version[1]}.{version[2]}"
+    
 # Burn the version number into the source file VERSION.S 
 log.info("Generating 6502 source code...")
 with open(os.path.join("src","VERSION.S"), "w") as out:
-    text = f"        ASC '{version}'\n"
+    text = f"version  HEX  {s}\n"
     out.write(text)
 
 

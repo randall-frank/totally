@@ -80,7 +80,28 @@ PADDLE_READ equ   $fb1e      ;read paddle specified by X-reg, return in Y-reg
          lda   KBDSTRB
          jsr   InitPrefix ;Init the I/O system
          jsr   ReadHS     ;Read high scores/check disk
+         jsr   DrawVersion
          jmp   StartTotally
+
+DrawVersion
+         lda   #0
+         sta   0
+         lda   #$c
+         sta   XTMP
+:loop    ldy   0
+         lda   version,Y
+         cmp   #$ff
+         bne   :next
+         rts
+:next    sta   GLYPH
+         lda   #129
+         sta   YTMP
+         jsr   DrawDigit
+         inc   0
+         inc   XTMP
+         jmp   :loop
+
+         put   VERSION.S
 
 MAGIC    asc   "(C)1983BYR.FRANK"
 
@@ -330,220 +351,14 @@ DrawDigit
          lda   ScanlineTblHI,y
          sta   $fd
          ldy   XTMP
-         lda   DigitImgTbl,x
+         lda   DigitImgTable,x
+         ora   #$80       ; set high order bit (change color vs DrawDigit2)
          sta   ($fc),y
          inx
          inc   YTMP
          dec   TMPHI
          bne   :nextline
          rts
-
-DigitImgTbl
-         dfb   $94
-         dfb   $c1
-         dfb   $c1
-         dfb   $80
-         dfb   $c1
-         dfb   $c1
-         dfb   $94
-         dfb   $00
-         dfb   $80
-         dfb   $c0
-         dfb   $c0
-         dfb   $80
-         dfb   $c0
-         dfb   $c0
-         dfb   $80
-         dfb   $00
-         dfb   $94
-         dfb   $c0
-         dfb   $c0
-         dfb   $94
-         dfb   $81
-         dfb   $81
-         dfb   $94
-         dfb   $00
-         dfb   $94
-         dfb   $c0
-         dfb   $c0
-         dfb   $94
-         dfb   $c0
-         dfb   $c0
-         dfb   $94
-         dfb   $00
-         dfb   $80
-         dfb   $c1
-         dfb   $c1
-         dfb   $94
-         dfb   $c0
-         dfb   $c0
-         dfb   $80
-         dfb   $00
-         dfb   $94
-         dfb   $81
-         dfb   $81
-         dfb   $94
-         dfb   $c0
-         dfb   $c0
-         dfb   $94
-         dfb   $00
-         dfb   $80
-         dfb   $81
-         dfb   $81
-         dfb   $94
-         dfb   $c1
-         dfb   $c1
-         dfb   $94
-         dfb   $00
-         dfb   $94
-         dfb   $c0
-         dfb   $c0
-         dfb   $80
-         dfb   $c0
-         dfb   $c0
-         dfb   $80
-         dfb   $00
-         dfb   $94
-         dfb   $c1
-         dfb   $c1
-         dfb   $94
-         dfb   $c1
-         dfb   $c1
-         dfb   $94
-         dfb   $00
-         dfb   $94
-         dfb   $c1
-         dfb   $c1
-         dfb   $94
-         dfb   $c0
-         dfb   $c0
-         dfb   $80
-         dfb   $00
-         dfb   $1d
-         dfb   $24
-         dfb   $5a
-         dfb   $30
-         dfb   $03
-         dfb   $20
-         dfb   $81
-         dfb   $14
-         dfb   $a9
-         dfb   $ff
-         dfb   $85
-         dfb   $62
-         dfb   $a9
-         dfb   $01
-         dfb   $85
-         dfb   $66
-         dfb   $a0
-         dfb   $00
-         dfb   $a5
-         dfb   $24
-         dfb   $c9
-         dfb   $27
-         dfb   $d0
-         dfb   $09
-         dfb   $20
-         dfb   $8e
-         dfb   $fd
-         dfb   $85
-         dfb   $62
-         dfb   $a9
-         dfb   $06
-         dfb   $85
-         dfb   $24
-         dfb   $b1
-         dfb   $12
-         dfb   $c5
-         dfb   $61
-         dfb   $d0
-         dfb   $11
-         dfb   $e6
-         dfb   $62
-         dfb   $a4
-         dfb   $62
-         dfb   $c0
-         dfb   $10
-         dfb   $b0
-         dfb   $09
-         dfb   $be
-         dfb   $70
-         dfb   $00
-         dfb   $e4
-         dfb   $24
-         dfb   $90
-         dfb   $02
-         dfb   $86
-         dfb   $24
-         dfb   $c9
-         dfb   $bb
-         dfb   $d0
-         dfb   $0a
-         dfb   $a0
-         dfb   $a0
-         dfb   $c4
-         dfb   $66
-         dfb   $d0
-         dfb   $04
-         dfb   $a4
-         dfb   $57
-         dfb   $84
-         dfb   $66
-         dfb   $c9
-         dfb   $8d
-         dfb   $f0
-         dfb   $0a
-         dfb   $a4
-         dfb   $66
-         dfb   $f0
-         dfb   $0b
-         dfb   $c9
-         dfb   $e1
-         dfb   $90
-         dfb   $02
-         dfb   $29
-         dfb   $1f
-         dfb   $20
-         dfb   $ed
-         dfb   $fd
-         dfb   $85
-         dfb   $66
-         dfb   $20
-         dfb   $df
-         dfb   $13
-         dfb   $d0
-         dfb   $b2
-         dfb   $60
-         dfb   $e6
-         dfb   $12
-         dfb   $d0
-         dfb   $02
-         dfb   $e6
-         dfb   $13
-         dfb   $c9
-         dfb   $8d
-         dfb   $60
-         dfb   $20
-         dfb   $81
-         dfb   $14
-         dfb   $a0
-         dfb   $00
-         dfb   $b1
-         dfb   $12
-         dfb   $09
-         dfb   $80
-         dfb   $20
-         dfb   $ed
-         dfb   $fd
-         dfb   $20
-         dfb   $df
-         dfb   $13
-         dfb   $d0
-         dfb   $f2
-         dfb   $60
-         dfb   $6c
-         dfb   $06
-         dfb   $06
 
 IncDrawScore
          sta   :Increment+1 ;Draw 6 digits of highscore $F0,$F1,$F2 -> 6 digits
@@ -3140,7 +2955,7 @@ Phase1Input
 :addscore
          ldx   #$32
          stx   $00
-:more    lda   #$10       ;10 at a time
+:more    lda   #$01       ;1 at a time
          jsr   IncDrawScore
          lda   SPKR
          ldy   #$ff
@@ -3203,6 +3018,7 @@ DrawGameTitle
 LastYRowCheck
          cpx   #$b3
          bne   @next
+         jsr   DrawVersion
          rts
 
 GetTitleByte
@@ -3894,7 +3710,8 @@ DigitImgTable
          hex   1440400040400000 ; 7
          hex   1441411441411400 ; 8
          hex   1441411440400000 ; 9
-     
+         hex   0000000000000800 ; '.'
+
 EnterNewInitials
          lda   #$0f
          sta   MON_CH
@@ -4162,21 +3979,21 @@ PDOS_io_buffer
          ds    1024
 
 ScoreTable                ; TODO: reduce all numbers (to lower total score)
-         dfb   $15        ;score amount per level??? per ship??? 16 levels
-         dfb   $20
-         dfb   $25
-         dfb   $30
-         dfb   $35
-         dfb   $40
-         dfb   $45
-         dfb   $50
-         dfb   $55
-         dfb   $60
-         dfb   $65
-         dfb   $70
-         dfb   $75
-         dfb   $80
-         dfb   $85
-         dfb   $90        ; end of score table
+         dfb   $01        ;score amount per level??? per ship??? 16 levels
+         dfb   $02
+         dfb   $03
+         dfb   $04
+         dfb   $05
+         dfb   $06
+         dfb   $07
+         dfb   $08
+         dfb   $09
+         dfb   $10
+         dfb   $11
+         dfb   $12
+         dfb   $13
+         dfb   $14
+         dfb   $15
+         dfb   $16        ; end of score table
 
          put   ENTITY_IMAGES.S
