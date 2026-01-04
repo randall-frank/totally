@@ -272,11 +272,6 @@ InitScoreAndLevels
          jsr   IncDrawScore
          rts
 
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-
 Beep     ldx   #$06
          stx   $01
 :loop    ldy   #$ff
@@ -330,7 +325,7 @@ UpdatePhase0Loop
 ScoreDeadEnity
          sta   NEntityScored
 ScoreBump
-         lda   #$50       ;Self modifing increment, changes with level
+         lda   #$00       ;Self modifying increment, changes with level
          jsr   IncDrawScore
          jmp   UpdatePhase0Loop
 
@@ -561,8 +556,10 @@ DrawChar lda   GLYPH      ;Draw a one byte wide img 8 lines tall
          bne   :nextline
          rts
 
+* Table of ASCII letters (A-Z) used for high score initials
+
 ChrImgTbl
-         dfb   $14
+CharA    dfb   $14
          asc   'EEUEEE'
          dfb   $00
          dfb   $15
@@ -1027,7 +1024,7 @@ FetchExpImgByte
          bne   nextscanline
          rts
 
-* page align the explosion images
+* page align the 3 explosion images
 
          ds    \
 ExplodeImage0
@@ -1129,217 +1126,6 @@ ExplodeImage2
          dfb   $2c
          dfb   $10
          dfb   $c0
-         dfb   $c9
-         dfb   $83
-         asc   "pjI P"
-         dfb   $05
-         dfb   $ad
-         dfb   $00
-         dfb   $c0
-         dfb   $10
-         dfb   $fb
-         asc   '`: SYNTAX'
-         dfb   $8d
-         asc   ': BAD FORMAT'
-         dfb   $8d
-         asc   ': MEMORY FULL'
-         dfb   $8d
-         asc   ': BAD RANGE'
-         dfb   $8d
-         asc   'BYTES USED'
-         dfb   $8d
-         asc   'BYTES REMAINING'
-         dfb   $8d
-         asc   'ALL OR SOME?(A/S)?'
-         dfb   $8d
-         asc   ': BAD SLOT OR DRIVE #'
-         dfb   $8d
-         dfb   $a9
-         dfb   $00
-         dfb   $8d
-         dfb   $80
-         dfb   $03
-         dfb   $85
-         dfb   $0e
-         dfb   $85
-         dfb   $0a
-         dfb   $a9
-         dfb   $20
-         dfb   $85
-         dfb   $0f
-         dfb   $85
-         dfb   $0b
-         dfb   $a2
-         dfb   $01
-         dfb   $86
-         dfb   $59
-         dfb   $a0
-         dfb   $10
-         dfb   $b9
-         dfb   $51
-         dfb   $1b
-         dfb   $c0
-         dfb   $03
-         dfb   $90
-         dfb   $02
-         dfb   $a9
-         dfb   $00
-         dfb   $99
-         dfb   $70
-         dfb   $00
-         dfb   $88
-         dfb   $10
-         dfb   $f1
-         dfb   $a9
-         dfb   $a0
-         dfb   $85
-         dfb   $61
-         dfb   $4c
-         dfb   $39
-         dfb   $fb
-         dfb   $32
-         dfb   $1c
-         dfb   $44
-         dfb   $1c
-         dfb   $57
-         dfb   $1c
-         dfb   $62
-         dfb   $1c
-         dfb   $72
-         dfb   $1c
-         dfb   $7f
-         dfb   $1c
-         dfb   $8d
-         dfb   $1c
-         dfb   $3a
-         dfb   $1c
-         dfb   $23
-         dfb   $1c
-         dfb   $96
-         dfb   $1c
-         dfb   $9a
-         dfb   $1c
-         asc   ' <SOURCE FILE>'
-         dfb   $00
-         asc   ' LINE# '
-         dfb   $00
-         asc   ' <LINE#> '
-         dfb   $00
-         asc   ' <BEGIN# <-END#>> '
-         dfb   $00
-         asc   ' .STRING. '
-         dfb   $00
-         asc   '.OLDSTR.NEWSTR.'
-         dfb   $00
-         asc   ' SOURCE FILE'
-         dfb   $00
-         asc   '<OBJECT FILE>'
-         dfb   $00
-         asc   '<DEVCTL>'
-         dfb   $00
-         dfb   $3c
-         dfb   $23
-         dfb   $3e
-         dfb   $00
-         dfb   $20
-         dfb   $23
-         dfb   $20
-         dfb   $00
-         dfb   $c9
-         dfb   $18
-         dfb   $d0
-         dfb   $70
-         dfb   $a9
-         dfb   $ff
-         dfb   $85
-         dfb   $00
-         dfb   $a9
-         dfb   $11
-         dfb   $85
-         dfb   $01
-         dfb   $20
-         dfb   $8e
-         dfb   $fd
-         dfb   $20
-         dfb   $d1
-         dfb   $1c
-         dfb   $98
-         dfb   $38
-         dfb   $65
-         dfb   $00
-         dfb   $85
-         dfb   $00
-         dfb   $a6
-         dfb   $01
-         dfb   $90
-         dfb   $01
-         dfb   $e8
-         dfb   $86
-         dfb   $01
-         dfb   $a0
-         dfb   $00
-         dfb   $b1
-         dfb   $00
-         dfb   $c9
-         dfb   $10
-         dfb   $d0
-         dfb   $03
-         dfb   $20
-         dfb   $06
-         dfb   $0c
-         dfb   $e6
-         dfb   $00
-         dfb   $d0
-         dfb   $02
-         dfb   $e6
-         dfb   $01
-         dfb   $4c
-         dfb   $ad
-         dfb   $1c
-         dfb   $a0
-         dfb   $ff
-         dfb   $c8
-         dfb   $b1
-         dfb   $00
-         dfb   $f0
-         dfb   $37
-         dfb   $10
-         dfb   $0c
-         dfb   $c9
-         dfb   $e0
-         dfb   $90
-         dfb   $02
-         dfb   $29
-         dfb   $1f
-         dfb   $20
-         dfb   $ed
-         dfb   $fd
-         dfb   $4c
-         dfb   $d3
-         dfb   $1c
-         dfb   $c9
-         dfb   $18
-         dfb   $d0
-         dfb   $05
-         asc   'hhLB'
-         dfb   $13
-         dfb   $aa
-         dfb   $bd
-         dfb   $0b
-         dfb   $1c
-         dfb   $85
-         dfb   $02
-         dfb   $bd
-         dfb   $0c
-         dfb   $1c
-         dfb   $85
-         dfb   $03
-         dfb   $98
-         dfb   $48
-         dfb   $a0
-         dfb   $00
-         dfb   $b1
-         dfb   $02
 
 ReadDirKbd
          lda   KBD
