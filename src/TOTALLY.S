@@ -294,7 +294,7 @@ PlayPhase0
 UpdatePhase0Loop
          jsr   ReadDirJoy
          jsr   UpdateMissileState
-         jsr   CallUpdateEntities
+         jsr   UpdateEntities
          lda   PlayrDiedFlg
          cmp   #$00
          bne   :deadplayer
@@ -434,7 +434,7 @@ IncDrawScore
          rts
 
 ReadDirJoy
-         jsr   JoyYRead
+         jsr   JoystickRead 
          lda   JOY_Y
          cmp   #$00
          beq   :ydown
@@ -486,52 +486,6 @@ ReadDirJoy
 :notxright1
          ldy   #$05       ;xmiddle,yup
          jmp   KeyMatch
-
-CallUpdateEntities
-         jsr   JoyXRead
-         jmp   UpdateEntities
-
-JoyYRead ldx   #$01
-         jsr   PADDLE_READ
-         tya
-         and   #$c0
-         cmp   #$c0
-         beq   :yup
-         cmp   #$00
-         beq   :ydown
-         lda   #$01
-         sta   JOY_Y
-         rts
-
-:yup     lda   #$02
-         sta   JOY_Y
-         rts
-
-:ydown   lda   #$00
-         sta   JOY_Y
-         rts
-
-         dfb   $ea
-
-JoyXRead ldx   #$00
-         jsr   PADDLE_READ
-         tya
-         and   #$c0
-         cmp   #$c0
-         beq   :xright
-         cmp   #$00
-         beq   :xleft
-         lda   #$01
-         sta   JOY_X
-         rts
-
-:xright  lda   #$02
-         sta   JOY_X
-         rts
-
-:xleft   lda   #$00
-         sta   JOY_X
-         rts
 
 DrawChar lda   GLYPH      ;Draw a one byte wide img 8 lines tall
          asl   A          ;$fa=[0,25] = [A,Z], $f8=column, $f9=scanline
@@ -2722,7 +2676,6 @@ Phase1Input
 :winner  jmp   :addscore
 
 :continue
-         jsr   JoyXRead
          dec   TickCount8
          bne   :notyet
          lda   #$08
@@ -3630,6 +3583,9 @@ Random
 * a deterministic amount of time).  The effective range
 * changes with 0=low, ~51=centered, ~114=high
 
+JoyLowThresh = 25
+JoyHighThresh = 90
+
 JoystickRead
         ldy #$00    ; initialize loop counter to 0 (y acts as the result here)
         sty JOY_X   ; clear result storage for X
@@ -3658,13 +3614,37 @@ JoystickRead
         iny         ; increment loop counter
         cpy #$7f    ; check if the loop count has reached the threshold
         bne :loop   ; if not, continue polling
-        rts         ; return from subroutine
+                          ; Map to 0,1,2 for X and Y
+        lda JOY_X
+        cmp #JoyLowThresh
+        bge :tryagain0
+        lda #0
+        jmp :ycheck
+:tryagain0    
+        cmp #JoyHighThresh
+        bge :ishi0
+        lda #1
+        jmp :ycheck
+:ishi0  lda #2
+:ycheck sta JOY_X
+        lda JOY_Y
+        cmp #JoyLowThresh
+        bge :tryagain1
+        lda #0
+        jmp :done
+:tryagain1    
+        cmp #JoyHighThresh
+        bge :ishi1
+        lda #1
+        jmp :done
+:ishi1  lda #2
+:done   sta JOY_Y
+        rts   
 
 InitPrefix
          jsr    MLI
          dfb    $2b
          da     PrefixParams
-         jsr    MLI
          bcs    :error
          dfb    $2c
          da     PrefixParams
