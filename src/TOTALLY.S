@@ -110,14 +110,14 @@ MAGIC    asc   "(C)1983BYR.FRANK"
 
 PlayAGame
          lda   #$03
-         sta   Lives      ;Lives?
+         sta   Lives     
          jsr   InitScoreAndLevels
          jsr   DrawLife1
          jsr   DrawLife2
          jsr   DrawLife3
 PlayLevel
          jsr   PaintColumn
-         jsr   SetupEntityState
+         jsr   PlayPhase0
          lda   PlayrDiedFlg
          cmp   #$01
          beq   :PlayerDied
@@ -143,18 +143,24 @@ PlayLevel
 :nottwo  jsr   Die1       ;No lives left
          jmp   EndOfGame
 
+* update to the next level
+
 NextLevel
-         inc   EntityFetchByte+2
-         lda   EntityFetchByte+2
-         cmp   #$80
-         bne   :levelloop
-         lda   #$70
+         inc   CurrentLevel
+         lda   CurrentLevel
+         and   #$0f       ; Entities wrap around at 16 levels
+         clc
+         adc   #>EntityImgTables
          sta   EntityFetchByte+2
-:levelloop
-         and   #$0f       ;levelcap as well
-         tax
+         lda   CurrentLevel
+         cmp   #$10
+         blt   :noclamp
+         lda   #$0f       ;levelcap for scoring, entity counts, etc
+:noclamp tax
          lda   ScoreTable,x
          sta   ScoreBump+1
+         lda   EntityNTable,x
+         sta   EntityCntChk+1
          jmp   PlayLevel
 
 Die1     jsr   ExplodeShip
@@ -253,7 +259,9 @@ SetupEntityState
          sta   $14
          jsr   DrawPlayerShip
          jsr   Beep
-         jmp   PlayPhase0
+         rts
+
+CurrentLevel dfb 0
 
 InitScoreAndLevels
          lda   #>EntityImgTables
@@ -261,13 +269,13 @@ InitScoreAndLevels
          ldx   #$00
          lda   ScoreTable,x
          sta   ScoreBump+1
-         nop
-         nop
-         nop
-         lda   #$00       ;Reset score to 000000
-         sta   SCORELO
-         sta   SCOREMID
-         sta   SCOREHI
+         lda   EntityNTable,x
+         sta   EntityCntChk+1
+         stx   CurrentLevel
+         stx   SCORELO    ;Reset score to 000000
+         stx   SCOREMID
+         stx   SCOREHI
+         lda   #$00
          jsr   IncDrawScore
          rts
 
@@ -288,9 +296,7 @@ Beep     ldx   #$06
          rts
 
 PlayPhase0
-         nop
-         nop
-         nop
+         jsr   SetupEntityState
 UpdatePhase0Loop
          jsr   ReadDirJoy
          jsr   UpdateMissileState
@@ -299,7 +305,8 @@ UpdatePhase0Loop
          cmp   #$00
          bne   :deadplayer
          lda   NEntityKilled
-         cmp   #$20       ;32 entites -> next level TODO: make this level dependent
+EntityCntChk         
+         cmp   #$20       ;32 entites -> next level (from EntityNTable)
          beq   :nextlevel
          jmp   :continue
 
@@ -2691,9 +2698,9 @@ Phase1Input
          jmp   PlayLoop
 
 :addscore
-         ldx   #$32
+         ldx   #30
          stx   $00
-:more    lda   #$01       ;1 at a time
+:more    lda   #$01       ;1 at a time for 30 pts total
          jsr   IncDrawScore
          lda   SPKR
          ldy   #$ff
@@ -3743,22 +3750,42 @@ RefNumC  dfb   0
 PDOS_io_buffer            ; ProDOS I/O buffer: 1K, page aligned
          ds    1024
 
-ScoreTable                
-         dfb   $01        ;score amount per level??? per ship??? 16 levels
+* per-level tables for various things
+
+EntityNTable              ;Note: clamp to level 16
+         dfb   10        ;number of entites to kill to complete the level
+         dfb   12
+         dfb   14
+         dfb   16
+         dfb   18
+         dfb   20
+         dfb   22
+         dfb   24
+         dfb   26
+         dfb   28
+         dfb   30
+         dfb   32
+         dfb   34
+         dfb   36
+         dfb   38
+         dfb   40        ; end of num entites table
+
+ScoreTable                ;Note: clamp to level 16
+         dfb   $01        ;score amount per entity at each level. 16 levels
+         dfb   $01
+         dfb   $01
+         dfb   $02
+         dfb   $02
          dfb   $02
          dfb   $03
+         dfb   $03
+         dfb   $03
+         dfb   $04
+         dfb   $04
          dfb   $04
          dfb   $05
-         dfb   $06
-         dfb   $07
-         dfb   $08
-         dfb   $09
-         dfb   $10
-         dfb   $11
-         dfb   $12
-         dfb   $13
-         dfb   $14
-         dfb   $15
-         dfb   $16        ; end of score table
+         dfb   $05
+         dfb   $05
+         dfb   $05        ; end of score table
 
          put   ENTITY_IMAGES.S

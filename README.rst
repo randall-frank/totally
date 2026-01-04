@@ -21,11 +21,47 @@ Totally
 
 Overview
 --------
-TBD
+This game was written as an experiment while in high school.  It was never
+fully completed, but it reached a reasonably playable state in 1983. This 
+version is a snapshot of that state.
+
+It is a simple multi-level side shooter with a "boss" between levels.
+It can be played with keyboard or joystick, but a joystick is strongly 
+recommended.  There are 16 "waves" of different looking (similar behaving)
+enemies with each level requiring that more enemies be dispatched before
+moving on to the "boss".  
 
 Details
 -------
-The game is written entirely in Merlin 6502 assembly.
+The source presented here is written entirely in Merlin 6502 assembly.  However,
+the original game was not written from source code of any kind.  It was written
+entirely by typing in 6502 opcodes by hand or by using the mini-assembler. The
+source code included in this repo was generated with the help of 
+`SourceGen <https://6502bench.com/>`_ (without which I probably would not
+have started this project).
+
+There are a couple of very interesting side effects of the hand-generated nature
+of this application.  First, I did not have all of the opcodes memorized. Thus,
+there is a tendency to use instructions due to 'finger memory' rather that true
+appropriateness.  Second, rarely did a function exceed 40-50 bytes.  I did not
+always know how long a function might be and where it might sit in memory.  None
+of the original source code was written on paper, it was pretty much generated
+on the fly as I typed it in, saved and ran.
+
+As as result, many functions were spaced ~32 bytes apart and often page aligned
+to avoid having to retype large blocks of code.  Almost 6k of unused memory was 
+reclaimed after the conversion to Merlin source code when the code was tightened 
+up.  A lot of head/tail patching of routines which popped up due to the original
+development environment have been removed.
+
+The game was originally written for DOS 3.3.  It stored high-scores in a single
+sector in the middle of track $11 via raw RWTS calls.  These have been replaced
+with standard ProDOS I/O calls and the program itself has been converted into
+a standard ProDOS .SYSTEM file.
+
+Several python tools were used to break out tables into individual source code
+files and format things like images.  These are not used during the build process,
+but are included in the 'utilities' directory.
 
 There is a build script in this repo that is capable of generating a .po file 
 from the sources.  It requires several tools to be installed:
