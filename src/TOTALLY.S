@@ -16,6 +16,7 @@ MON_PROMPT  equ   $33        ;prompt character, used by GETLN
 TMPSCRHI    equ   $43
 TMPSCRMID   equ   $44
 TMPSCRLO    equ   $45
+RndTemp     equ   $9f
 MissileWtCtr equ   $ba       ; Missile wait counter. # steps from $FE status to $00 status
 JOY_Y       equ   $be
 JOY_X       equ   $bf
@@ -56,7 +57,6 @@ PTRIG       equ   $C070      ; Trigger (start) paddle measurement
 * ROM routines
 
 REBOOT      equ   $e000
-RAMRANDOM   equ   $efae
 PADDLE_READ equ   $fb1e      ;read paddle specified by X-reg, return in Y-reg
 
          org   $2000      ; start of all semi-well behaved .SYSTEM files
@@ -1910,15 +1910,15 @@ EntityLeftCheck
 EntityXMovement
          dec   EntityXTable,x
          nop
-         lda   $9f        ;Random check
+         lda   RndTemp    ; TODO: Random
          and   #$20
          cmp   #$20
          beq   ChangeEntityY
          jmp   DrawEntity
 
 RestartEntity
-         jsr   RAMRANDOM
-         lda   $9f        ;Get a random number
+         jsr   Random     ; TODO: Random
+         sta   RndTemp
          asl   A
          lsr   A
          clc
