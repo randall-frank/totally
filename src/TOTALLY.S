@@ -116,7 +116,7 @@ PlayAGame
          jsr   DrawLife2
          jsr   DrawLife3
 PlayLevel
-         jsr   PaintColumn
+         jsr   InitFuel
          jsr   PlayPhase0
          lda   PlayrDiedFlg
          cmp   #$01
@@ -161,6 +161,7 @@ NextLevel
          sta   ScoreBump+1
          lda   EntityNTable,x
          sta   EntityCntChk+1
+         jsr   DrawLvlEntity
          jmp   PlayLevel
 
 Die1     jsr   ExplodeShip
@@ -172,43 +173,91 @@ Die2     jsr   ExplodeShip
 Die3     jsr   ExplodeShip
          jmp   DrawLife3
 
+
+* player (lives) ships: 255, [119, 140, 161]
+
+LivesShipX =   255
+LivesShipY =   110        ; 119
+LivesDelta =   18         ; 21
+LiveEntityY =  165
+LiveEntityNX =  $24
+LiveEntityNY =  179
+
 DrawLife1
-         lda   #$fc
+         lda   #LivesShipX
          sta   PlayerX
-         lda   #$77
+         lda   #LivesShipY
          sta   PlayerY
          jmp   DrawPlayerShip
 
 DrawLife2
-         lda   #$fc
+         lda   #LivesShipX
          sta   PlayerX
-         lda   #$8c
+         lda   #LivesShipY+LivesDelta
          sta   PlayerY
          jmp   DrawPlayerShip
 
 DrawLife3
-         lda   #$fc
+         lda   #LivesShipX
          sta   PlayerX
-         lda   #$a1
+         lda   #LivesShipY+LivesDelta+LivesDelta
          sta   PlayerY
          jmp   DrawPlayerShip
 
-PaintColumn
-         ldx   #$73       ;Scanline $73 to $b0 paint column $21 with $2A
-         ldy   #$21
+DrawLvlEntity
+         ldy   #LiveEntityY
+         lda   #LivesShipX
+         jsr   DrawEntity2
+         rts
+
+DrawLvlCount
+         sec   
+         lda   EntityCntChk+1
+         sbc   NEntityKilled
+         ldx   #0         ; 10s digit
+:loop    cmp   #10
+         blt   :out
+         inx
+         sec
+         sbc   #10
+         jmp   :loop
+:out     stx   GLYPH
+         pha
+         lda   #LiveEntityNX
+         sta   XTMP
+         lda   #LiveEntityNY
+         sta   YTMP
+         jsr   DrawDigit2
+         pla
+         sta   GLYPH
+         lda   #LiveEntityNX+2
+         sta   XTMP
+         lda   #LiveEntityNY
+         sta   YTMP
+         jsr   DrawDigit2
+         rts
+
+FuelColumn = $21
+FuelCtrMax = $30          ; number of game loops between single fuel decrements
+FuelLvlMax = $72
+FuelLvlMin = $af
+
+InitFuel
+         ldx   #$73       ; Scanline $73 to $b0 paint column $21 with $2A
+         ldy   #FuelColumn
 :next    lda   ScanlineTblHI,x
          sta   TGTHI
          lda   ScanlineTblLO,x
          sta   TGTLO
-         lda   #$2a
+         lda   #$6b  
          sta   (TGTLO),y
          jsr   DelayOneClick
          inx
          cpx   #$b0
          bne   :next
-         lda   #$72
+         lda   #FuelLvlMax
          sta   CurFuelLevel
-         lda   #$30
+         lda   #FuelCtrMax
          sta   FuelCounter
          rts
 
@@ -224,22 +273,23 @@ FuelDecrement
          beq   FuelDrop
          rts
 
-FuelDrop lda   #$30
+FuelDrop lda   #FuelCtrMax
          sta   FuelCounter
-         ldy   #$21       ;Fuel bar column
+         ldy   #FuelColumn       ;Fuel bar column
          inc   CurFuelLevel
          ldx   CurFuelLevel
          lda   ScanlineTblHI,x
          sta   TGTHI
          lda   ScanlineTblLO,x
          sta   TGTLO
-         lda   #$00       ;Clear top of the fuel
+         lda   #$63       ;Clear top of the fuel
          sta   (TGTLO),y
          cpx   #$af
          bne   :notlast
          lda   #$01       ;Ran out of fuel
          sta   PlayrDiedFlg
 :notlast rts
+
 
 SetupEntityState
          lda   #$00
@@ -277,6 +327,8 @@ InitScoreAndLevels
          stx   SCOREHI
          lda   #$00
          jsr   IncDrawScore
+         jsr   DrawLvlEntity
+         jsr   DrawLvlCount
          rts
 
 Beep     ldx   #$06
@@ -297,6 +349,7 @@ Beep     ldx   #$06
 
 PlayPhase0
          jsr   SetupEntityState
+         jsr   DrawLvlCount
 UpdatePhase0Loop
          jsr   ReadDirJoy
          jsr   UpdateMissileState
@@ -306,7 +359,7 @@ UpdatePhase0Loop
          bne   :deadplayer
          lda   NEntityKilled
 EntityCntChk         
-         cmp   #$20       ;32 entites -> next level (from EntityNTable)
+         cmp   #$20       ;32 entities -> next level (from EntityNTable)
          beq   :nextlevel
          jmp   :continue
 
@@ -1729,12 +1782,19 @@ Draw3BlackBytes
          bne   :nextstore
          rts
 
+
+DrawEntity2               ; A=Xpos, Y=Ypos
+         sty   YScanline
+         ldx   #$ff
+         stx   WhichEntity
+         jmp   @short
+
 DrawEntity
          ldx   WhichEntity ;Draw entity # from $CF
          lda   EntityYTable,x
          sta   YScanline
          lda   EntityXTable,x
-         jsr   DivideBy7
+@short   jsr   DivideBy7
          stx   XByte
          tya
          asl   A
@@ -1758,12 +1818,15 @@ DrawEntity
 
 :collided
          ldx   WhichEntity
+         bmi   :notable
          lda   #$83       ;Dead entity???
          sta   EntitySTable,x
          inc   NEntityKilled
+         jsr   DrawLvlCount
          lda   #$ff
          sta   MissleY    ;Stop missle
-         rts
+:notable rts
+
 
 DrawEntityScanline
          lda   #$03
@@ -1777,12 +1840,11 @@ DrawEntityScanline
          sta   TGTLO
          ldx   TempY
 byteloop lda   (TGTLO),y
-         jsr   HiBitCheck ;Hit by missile???
-         nop
-         nop
-         nop
-         nop
-         nop
+         and   #$80       
+         cmp   #$80       ; Hit by missile???
+         bne   EntityFetchByte
+         lda   #$01
+         sta   colliderflag     ; If high bit set, store 1 at $CE
 EntityFetchByte
          lda   EntityImgTables,x    ;Fetch entity: HI=from level?  LO=from shift*32
          sta   (TGTLO),y
@@ -1917,15 +1979,6 @@ EntitySTable
          dfb   $01
          dfb   $00
          asc   ':>#',27,'+/37;?#',27,'+/37;?'
-
-HiBitCheck
-         and   #$80       ;If high bit set, store 1 at $CE
-         cmp   #$80
-         bne   :bitclear
-         lda   #$01
-         sta   colliderflag
-:bitclear
-         rts
 
 * explosion is 3 images of 3*9+5=$20, so $20*3 = $60 bytes
 * images are 3 bytes wide and 9 scanlines.  

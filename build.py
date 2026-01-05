@@ -38,7 +38,6 @@ with open(os.path.join("src","VERSION.S"), "w") as out:
     text = f"version  HEX  {s}\n"
     out.write(text)
 
-
 files = ["TOTALLY.S"]
 
 log.info("Assembling 6502 source code...")
