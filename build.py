@@ -25,7 +25,7 @@ if not prerequisites:
 
 # Set the version number and start the build process
 # Must be 5 characters
-version = [1,0,1]
+version = [1,0,2]
 s=""
 for v in version:
     s += f"{int(v):02x}0a"

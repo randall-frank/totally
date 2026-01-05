@@ -237,19 +237,29 @@ DrawLvlCount
          jsr   DrawDigit2
          rts
 
+
+* Fuel panel locations
+
 FuelColumn = $21
 FuelCtrMax = $30          ; number of game loops between single fuel decrements
 FuelLvlMax = $72
 FuelLvlMin = $af
 
 InitFuel
-         ldx   #$73       ; Scanline $73 to $b0 paint column $21 with $2A
+         ldx   #$72       ; Scanline $73 to $b0 paint column $21 with $2A
          ldy   #FuelColumn
+         lda   ScanlineTblHI,x
+         sta   TGTHI
+         lda   ScanlineTblLO,x
+         sta   TGTLO
+         lda   #$7f         ; top with 1111 111  
+         sta   (TGTLO),y
+         inx
 :next    lda   ScanlineTblHI,x
          sta   TGTHI
          lda   ScanlineTblLO,x
          sta   TGTLO
-         lda   #$6b  
+         lda   #$6b          ; 1101 011  1248 124
          sta   (TGTLO),y
          jsr   DelayOneClick
          inx
@@ -284,7 +294,7 @@ FuelDrop lda   #FuelCtrMax
          sta   TGTLO
          lda   #$63       ;Clear top of the fuel
          sta   (TGTLO),y
-         cpx   #$af
+         cpx   #$af       ; 1100 011   1248 124
          bne   :notlast
          lda   #$01       ;Ran out of fuel
          sta   PlayrDiedFlg
@@ -2740,9 +2750,9 @@ Phase1Input
          bne   :notyet
          lda   #$08
          sta   TickCount8
-         jsr   MovePoints ;Every 8 passes?
+         jsr   MovePoints    ; Every 8 passes?
 :notyet  jsr   FuelDecrement
-         lda   PlayrDiedFlg ;Check to see if we died...
+         lda   PlayrDiedFlg  ; Check to see if we died...
          cmp   #$01
          bne   :stillrunning
          rts
@@ -2751,11 +2761,13 @@ Phase1Input
          jmp   PlayLoop
 
 :addscore
-         ldx   #30
-         stx   $00
-:more    lda   #$01       ;1 at a time for 30 pts total
+         jsr   FuelDrop
+         lda   CurFuelLevel
+         and   #1
+         beq   :skip
+         lda   #$01       ; 1 at a time for every 2 points of fuel
          jsr   IncDrawScore
-         lda   SPKR
+:skip    lda   SPKR
          ldy   #$ff
 :delay   dey
          bne   :delay
@@ -2763,8 +2775,10 @@ Phase1Input
 :noise   dey
          jsr   Noise
          bne   :noise
-         dec   $00
-         bne   :more
+         lda   PlayrDiedFlg
+         beq   :addscore
+         lda   #0           ; make sure to clean the flag
+         sta   PlayrDiedFlg
          rts
 
 Noise    lda   SPKR
@@ -2917,10 +2931,10 @@ MoveOnePoint
 
 DrawDotRaw
          stx   $02
-         lda   PointTableY,x
+         lda   PointTableY,x  ; wrap in Y
          tax
          inx
-         cpx   #$b8
+         cpx   #$b8           ; $b8 -> $08
          bne   :loopY
          ldx   #$08
 :loopY   txa
@@ -2944,7 +2958,7 @@ DrawPixel
          asl   A
          lsr   A
          tay
-         lda   #$14       ;Colored point  bitmask:00010100
+         lda   #$14       ;Colored point  bitmask: 0010 100   1248 124
          eor   (TGTLO),y
          sta   (TGTLO),y
          rts
@@ -2961,7 +2975,7 @@ Phase1Setup
          sta   PointTableY,x
          lda   PointTableX,x
          sta   $01
-         jsr   DrawDot    ;01 is from 6400,x and x is the slot index
+         jsr   DrawDot    ;01 is from PointTableX,x and x is the slot index
          dex
          bne   :next
          lda   #$60       ;Init $300 to $60, $301 to $00
