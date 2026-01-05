@@ -1151,6 +1151,7 @@ ExplodeImage2
          dfb   $c0
 
 ReadDirKbd
+         jsr   JoystickTiming ; fake timing else keyboard version is too fast
          lda   KBD
          sta   $15
          ldy   #$00
@@ -1691,8 +1692,9 @@ PlayerShipImage6
 UpdateEntities
          lda   #$07
          sta   WhichEntity
+         jsr   PauseCheck
 :nextentity
-         jsr   ESCPatchToHandleEntity
+         jsr   HandleEntity
          lda   #$00
          sta   colliderflag
          dec   WhichEntity
@@ -2727,6 +2729,12 @@ ESCPatchToHandleEntity
          beq   ESCPatchToHandleEntity
          jmp   HandleEntity
 
+PauseCheck         
+         lda   KBD
+         cmp   #$9b
+         beq   PauseCheck
+         rts
+
 TickCount8
          dfb   $08
 
@@ -2737,6 +2745,7 @@ PlayLoop jsr   DrawPhase1Boss
 Phase1Input
          jsr   ReadDirJoy ;Self modifying entry for kbd vs joy
          jsr   ShiftDownward
+         jsr   PauseCheck
          lda   $0301
          cmp   #$01
          beq   :winner    ;Phase done????
@@ -3659,6 +3668,38 @@ Random
 
 JoyLowThresh = 25
 JoyHighThresh = 90
+
+
+JoystickTiming            ; fake a joystick read for use w/keyboard
+        ldy #$00    ; initialize loop counter to 0 (y acts as the result here)
+        sty TGTLO   ; clear result storage for X
+        sty TGTHI   ; clear result storage for Y
+        lda PTRIG   ; trigger the paddle timing cycle (starts the measurement)
+
+:loop
+        lda PADDL0  ; check the status of paddle 0
+        bmi :set0   ; if high bit is set (cap discharged), branch to set value
+        nop         ; (padding for consistent timing)
+        bpl :nop0   ; branch always (takes consistent time)
+
+:set0
+        sty TGTLO   ; store the current loop count as the paddle 0 value
+:nop0
+        ; (padding nops or other instructions to ensure equal cycle count between reads)
+        lda PADDL1  ; check the status of paddle 1
+        bmi :set1   ; if high bit set, branch to set value
+        nop         ; (padding)
+        bpl :nop1   ; branch always
+
+:set1
+        sty TGTHI   ; store current loop count as the paddle 1 value
+:nop1
+        ; (padding)
+        iny         ; increment loop counter
+        cpy #$7f    ; check if the loop count has reached the threshold
+        bne :loop   ; if not, continue polling
+        rts
+
 
 JoystickRead
         ldy #$00    ; initialize loop counter to 0 (y acts as the result here)

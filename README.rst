@@ -86,7 +86,58 @@ One can adjust the pathnames to CiderPress and Merlin at the top of the build.py
 
 Documentation and Issues
 ------------------------
-TBD
+
+The game proceeds in a series of levels.  There are 16 levels and you get refueled
+at the start of each level.  If you complete the level, your remaining fuel is 
+added to your score before moving to the next level.  Each level has two phases:
+'Alien' and 'Boss'.  Every level has a different looking alien ship.  You have
+three ships before your run ends.  You lose a ship if it runs into any aliens,
+stars or the walls of the play field. 
+
+.. image:: splash.png
+   :alt: First Phase
+   :align: center
+
+
+After selecting (k)eyboard or (j)oystick control, the game begins in the "Alien"
+phase.  In this phase, aliens come at your ship from the right side of the screen.
+To move to the next phase, some number of aliens need to be destroyed. 
+
+
+.. image:: banner.png
+   :alt: First Phase
+   :align: center
+
+
+In the 'ships' corner of the screen you can see how many ships you still have
+and a picture of this level's alien.  Below it, the number of aliens 
+that still need to be destroyed to complete the level is displayed.  When that
+number drops to '00', the game switches to the "Boss" phase.
+
+In this phase, your ship is placed in a moving star field.  You must avoid
+all of the stars to stay alive and you cannot destroy them.  On the right
+of the play field, there are three bands of "walls" behind which the boss
+enemy scrolls from top to bottom.
+
+.. image:: bossphase.png
+   :alt: Second Phase
+   :align: center
+
+
+The band furthest to the right scrolls from bottom to top.  To be able to hit
+the boss, you need to fire into the walls, creating holes for your shots to
+pass through.  It only takes one shot to kill the boss, but you must dodge
+stars while chewing up the walls with your shots.  Once the boss is killed,
+your remaining fuel will drain and you will score points for that fuel.
+
+
+Then it is off to the next level where the two phases repeat again.  If you
+achieved a high score, you will be able to enter your initials.  The top 10
+scores are saved in the file `TOTALLY.HIGH`.  You can delete the file to
+reset the high scores.
+
+How to Play
+~~~~~~~~~~~
 
 Normally, one would download the `.po` file and use it with an emulator or 
 burn a 5.25" disk with the image.  Thanks to the great work by Chris Torrence
