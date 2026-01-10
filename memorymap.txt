@@ -5,11 +5,7 @@ Issues:
 
 GetInputBtn -> can be JSR 1Df0 or LDA C000   ReadJoystickBtn
 
-
-DivideBy7 - divide Acc by 7 Convert X pos into byte(X),bits(Y)
-return remainder in Y, divisor in X
-
-Images are generally pre-shifted tables. 
+Ships/Entites are generally pre-shifted tables. 
 
 3 bytes/scanline, 9 rows -> 27 bytes/img + 5 unused bytes = 32bytes/image
 
@@ -17,6 +13,29 @@ Columns:
 $1D=last white bar
 $21=current score and "fuel bar"
 $25=highscore and "ships"
+
+Horiz bars
+[bf,b8]    184-191
+[07,01]    1-7
+
+Vertical bars
+
+Right
+column $18,$19($1a) (2 for ship, $1b,$1c) $1d
+valid column = $17*7+6 = pixel 167 
+Left
+column $00
+valid column = $01*7 = pixel 7
+
+Valid playfied rect:
+
+Phase 0
+7,8    202,8
+7,183  202,183
+
+Phase 1
+7,8    167,8
+7,183  167,183
 
 
 

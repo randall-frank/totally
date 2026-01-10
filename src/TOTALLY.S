@@ -31,10 +31,13 @@ SCOREHI     equ   $f2
 HISCORELO   equ   $f3
 HISCOREMID  equ   $f4
 HISCOREHI   equ   $f5
+
+* Interface to digit drawing functions
 XTMP        equ   $f8
 YTMP        equ   $f9
 GLYPH       equ   $fa
 TMPHI       equ   $fb
+
 NEntityKilled equ   $ff
 NEntityScored equ   $6f
 
@@ -2750,6 +2753,7 @@ Phase1Input
          cmp   #$01
          beq   :winner    ;Phase done????
          jsr   ScrollWallMissile
+         jsr   MoveStars
          jmp   :continue
 
 :winner  jmp   :addscore
@@ -2759,7 +2763,7 @@ Phase1Input
          bne   :notyet
          lda   #$08
          sta   TickCount8
-         jsr   MovePoints    ; Every 8 passes?
+                          ; jsr   MovePoints    ; Every 8 passes? RJF
 :notyet  jsr   FuelDecrement
          lda   PlayrDiedFlg  ; Check to see if we died...
          cmp   #$01
@@ -2832,8 +2836,10 @@ DrawGameTitle
          clc
          adc   $05
          sta   LastYRowCheck+1
-@next    txa
-         jsr   ComputeScanlineAddr
+@next    lda   ScanlineTblHI,x
+         sta   TGTHI
+         lda   ScanlineTblLO,x
+         sta   TGTLO
          jsr   DrawTitleScanline
          inx
 LastYRowCheck
@@ -2843,7 +2849,7 @@ LastYRowCheck
          rts
 
 GetTitleByte
-         lda   $5700      ;Self modifying code
+         lda   $5700      ;Self modifying code address
          pha
          lda   GetTitleByte+1
          clc
@@ -2868,125 +2874,270 @@ LastXColumnCheck
          ldy   $05
          rts
 
-ComputeScanlineAddr
-         pha
-         and   #$c0
-         sta   TGTLO
-         lsr   A
-         lsr   A
-         ora   TGTLO
-         sta   TGTLO
-         pla
-         sta   TGTHI
-         asl   A
-         asl   A
-         asl   A
-         rol   TGTHI
-         asl   A
-         rol   TGTHI
-         asl   A
-         ror   TGTLO
-         lda   TGTHI
-         and   #$1f
-         ora   #$20
-         sta   TGTHI
-         rts
-
 * Inline the title image bytes
 
          put   TITLE_IMAGE.S
 
-MovePoints
-         lda   #$0b
-         sta   $00
-:loop    jsr   MoveOnePoint
-         dec   $00
-         lda   $00
-         cmp   #$00
-         bne   :loop
-         rts
+* Stars...  There can be N stars in phase1.  These just bounce 
+* off the walls.  They are specified as:
+*      X,Y,cntX,cntY,incX,incY,bcntX,bcntY
+* X,Y : location of the point
+* cnt{X,Y} : number of update passes before location is updated
+* inc{X,Y} : amount to add (+-) when cnt{X,Y} expires
+* bcnt{X,Y} : amount to reset cnt{X,Y} to after expiration
+*
 
-MoveOnePoint
-         ldx   $00
-         lda   PointTableX,x
-         sta   $01
+StarCount dfb  0          ; number of stars
+StarMinCount dfb 0        ; base speed number
+
+* 256 bytes of state
+StarLocX  ds   32
+StarLocY  ds   32
+StarCntX  ds   32
+StarCntY  ds   32
+StarIncX  ds   32
+StarIncY  ds   32
+StarBcntX ds   32
+StarBcntY ds   32
+
+StarCntTable            ; number of stars/level (clamped)
+         dfb   18
+         dfb   18
+         dfb   20
+         dfb   20
+         dfb   22
+         dfb   22
+         dfb   24
+         dfb   24
+         dfb   26
+         dfb   26
+         dfb   28
+         dfb   28
+         dfb   30
+         dfb   30
+         dfb   32
+         dfb   32
+
+StarSpdTable            ; base number of cycles/level
+         dfb   4
+         dfb   4
+         dfb   4
+         dfb   4
+         dfb   3
+         dfb   3
+         dfb   3
+         dfb   3
+         dfb   2
+         dfb   2
+         dfb   2
+         dfb   2
+         dfb   1
+         dfb   1
+         dfb   1
+         dfb   1
+
+InitStars
+         lda   CurrentLevel
+         cmp   #$10
+         blt   :noclamp
+         lda   #$0f       ; levelcap
+:noclamp tax
+         lda   StarCntTable,x
+         sta   StarCount
+         lda   StarSpdTable,x
+         sta   StarMinCount
+         ldx   #0
+:nextst  ; start with +- directions
+         jsr   Random     ; create a field of stars
+         ldy   #1         ; start with +- directions
+         and   #1
+         beq   :skip0
+         ldy   #$ff
+:skip0   tya
+         sta   StarIncX,x
+         jsr   Random     ; create a field of stars
+         ldy   #1
+         and   #1
+         beq   :skip1
+         ldy   #$ff
+:skip1   tya
+         sta   StarIncY,x
+         ; speeds/deltas
+         jsr   Random
+         and   #$03       
          clc
-         rol   A
-         bcs   :negativedir
-         jsr   DrawDot
-         inc   $01
-         lda   $01
-         cmp   #$18
-         bne   :wrap0
-         lda   #$96
-         sta   $01
-:wrap0   lda   $01
-         sta   PointTableX,x
-         jsr   DrawDotRaw
-         rts
-
-:negativedir
-         jsr   DrawDot
-         dec   $01
-         lda   $01
-         cmp   #$80
-         bne   :wrap1
-         lda   #$02
-         sta   $01
-:wrap1   lda   $01
-         sta   PointTableX,x
-         jsr   DrawDotRaw
-         rts
-
-DrawDotRaw
-         stx   $02
-         lda   PointTableY,x  ; wrap in Y
-         tax
+         adc   StarMinCount
+         sta   StarCntX,x
+         sta   StarBcntX,x
+         jsr   Random
+         and   #$03    
+         clc
+         adc   StarMinCount
+         sta   StarCntY,x
+         sta   StarBcntY,x
+         ; Locations - grab an X and Y and loop if invalid
+:again   jsr   Random
+         sta   StarLocX,x
+         jsr   Random
+         sta   StarLocY,x
+         jsr   StarValid   
+         bcs   :again                         
          inx
-         cpx   #$b8           ; $b8 -> $08
-         bne   :loopY
-         ldx   #$08
-:loopY   txa
-         ldx   $02
-         sta   PointTableY,x
-DrawDot  stx   $02        ;X is the index into Ytable
-         lda   PointTableY,x
-         tax
-         jsr   DrawPixel  ;Draw the point on two scanlines
-         inx
-         jsr   DrawPixel
-         ldx   $02
+         cpx   StarCount
+         blt   :nextst
+         jsr   DrawStars
+         lda   #15
+         sta   PlayerX
+         lda   #80
+         sta   PlayerY
+         jsr   DrawPlayerShip
          rts
 
-DrawPixel
+StarValid   ; Check if Valid
+         lda   StarLocX,x
+         cmp   #167-4
+         bge   :invalid
+                          ; cmp   #7         
+         cmp   #50        ; carve out space for ship to start?
+         blt   :invalid
+         lda   StarLocY,x
+         cmp   #183-2
+         bge   :invalid
+         cmp   #8
+         blt   :invalid
+         clc
+         rts
+:invalid sec         
+         rts         
+
+MoveStars
+         ldx   #0
+:nextst  lda   StarLocX,x  ; record the point position
+         sta   XTMP
+         lda   StarLocY,x
+         sta   YTMP        
+         ; move a star    
+         dec   StarCntX,x  
+         bne   :xok
+         lda   StarBcntX,x
+         sta   StarCntX,x
+         ; apply incX
+         lda   XTMP
+         adc   StarIncX,x
+         cmp   #7
+         blt   :bounceRL
+         cmp   #166
+         bge   :bounceRL
+         sta   StarLocX,x
+         jmp   :xok
+:bounceRL
+         lda   StarIncX,x
+         eor   #$fe
+         sta   StarIncX,x
+         lda   XTMP
+         adc   StarIncX,x
+         sta   StarLocX,x  
+:xok     dec   StarCntY,x
+         bne   :yok
+         lda   StarBcntY,x
+         sta   StarCntY,x
+         ; apply incY
+         lda   YTMP
+         adc   StarIncY,x
+         cmp   #8
+         blt   :bounceTB
+         cmp   #184
+         bge   :bounceTB
+         sta   StarLocY,x
+         jmp   :yok
+:bounceTB
+         lda   StarIncY,x
+         eor   #$fe
+         sta   StarIncY,x
+         lda   YTMP
+         adc   StarIncY,x
+         sta   StarLocY,x         
+:yok     ; Replot based on motion or lack thereof
+         lda   StarLocX,x   
+         cmp   XTMP
+         bne   :replot
+         lda   StarLocY,x
+         cmp   YTMP
+         beq   :noplot
+:replot  jsr   DrawStar     ; Erase from old location
+         lda   StarLocX,x
+         sta   XTMP
+         lda   StarLocY,x
+         sta   YTMP
+         jsr   DrawStar     ; Draw at new location
+:noplot  inx
+         cpx   StarCount
+         bge   :donest
+         jmp   :nextst
+:donest  rts
+
+DrawStars
+         ldx   #0
+:nextst  lda   StarLocX,x
+         sta   XTMP
+         lda   StarLocY,x
+         sta   YTMP
+         jsr   DrawStar
+         inx
+         cpx   StarCount
+         blt   :nextst
+         rts
+
+DrawStar                  ; XTMP,YTMP
+         lda   #2
+         sta   GLYPH
+         txa              ; preserve X reg
+         pha
+:starln  ldx   YTMP       ; First scanline
          lda   ScanlineTblHI,x
          sta   TGTHI
          lda   ScanlineTblLO,x
          sta   TGTLO
-         lda   $01        ;The column is in $01
-         asl   A
-         lsr   A
+         ldx   XTMP
+         lda   Div7Quotient,x  ; draw left column
          tay
-         lda   #$14       ;Colored point  bitmask: 0010 100   1248 124
+         lda   Div7Remainder,x ; offset into preshifted images
+         tax             
+         lda   StarLeftByte,x  ; two preshifted bytes
          eor   (TGTLO),y
          sta   (TGTLO),y
+         iny
+         lda   StarRightByte,x
+         eor   (TGTLO),y
+         sta   (TGTLO),y
+         inc   YTMP
+         dec   GLYPH
+         bne   :starln
+         pla
+         tax
          rts
+
+* Star pixel image (4 pixels, repeat for 2 scanlines)
+* 1248 124    1248
+* 1010 000    0000 - 05 00 
+* 0101 000    0000 - 0a 00
+* 0010 100    0000 - 14 00
+* 0001 010    0000 - 28 00
+* 0000 101    0000 - 50 00
+* 0000 010    1000 - 20 01
+* 0000 001    0100 - 40 02
+
+StarLeftByte
+         hex   050a1428502040
+StarRightByte
+         hex   00000000000102
 
 Phase1Setup
          lda   #$01
          jsr   DrawEmptyPlayfield
          lda   #$00
          sta   $14
-         ldx   #$0b       ;11 things
-:next    lda   PointStartX,x
-         sta   PointTableX,x
-         lda   PointStartY,x
-         sta   PointTableY,x
-         lda   PointTableX,x
-         sta   $01
-         jsr   DrawDot    ;01 is from PointTableX,x and x is the slot index
-         dex
-         bne   :next
+         jsr   InitStars
          lda   #$60       ;Init $300 to $60, $301 to $00
          sta   $0300
          lda   #$00
@@ -2994,82 +3145,8 @@ Phase1Setup
          sta   MissleY    ;Reset missile
          lda   #$10
          sta   TickCount8
-         lda   #$60
-         sta   PlayerX
-         sta   PlayerY
-         jsr   DrawPlayerShip
          jsr   Beep
          rts
-
-PointStartX
-         dfb   $00
-         dfb   $05
-         dfb   $95
-         dfb   $16
-         dfb   $85
-         dfb   $0b
-         dfb   $84
-         dfb   $13
-         dfb   $88
-         dfb   $08
-         dfb   $97
-         dfb   $10
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-PointStartY
-         dfb   $00
-         dfb   $10
-         dfb   $20
-         dfb   $30
-         dfb   $40
-         dfb   $50
-         dfb   $60
-         dfb   $70
-         dfb   $80
-         dfb   $90
-         dfb   $a0
-         dfb   $b0
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-         
-PointTableX
-         dfb   $ff
-         dfb   $86
-         dfb   $10
-         dfb   $0d
-         dfb   $8e
-         dfb   $02
-         dfb   $8d
-         dfb   $0a
-         dfb   $91
-         dfb   $83
-         dfb   $0e
-         dfb   $07
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
-PointTableY
-         dfb   $ff
-         dfb   $33
-         dfb   $43
-         dfb   $53
-         dfb   $63
-         dfb   $73
-         dfb   $83
-         dfb   $93
-         dfb   $a3
-         dfb   $b3
-         dfb   $13
-         dfb   $23
-         dfb   $ff
-         dfb   $ff
-         dfb   $00
-         dfb   $00
          
 SwapScoreHiLo
          lda   SCORELO
