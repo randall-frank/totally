@@ -1,11 +1,28 @@
+import argparse
 import logging
 import shutil
 import subprocess
 import sys
 import os
 
-logging.basicConfig(level=logging.INFO)
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--verbose", action="store_true", default=False, help="Run in verbose mode")
+parser.add_argument("--logfile", help="Log file for verbose output", default="")
+parser.add_argument("--debug", action="store_true", default=False, help="Include BASIC.SYSTEM")
+args = parser.parse_args()
+
+mode = "release"
+if args.debug:
+    mode = "debug"
+
+# Set up logging
+level = logging.INFO
+if args.verbose:
+    level = logging.DEBUG
+    
 log = logging.getLogger("build")
+logging.basicConfig(filename=args.logfile, level=level)
 
 # Note: these paths are for local Windows installs.  All of these tools
 # can be installed under Linux as well, but these paths will need to change.
@@ -25,7 +42,7 @@ if not prerequisites:
 
 # Set the version number and start the build process
 # Must be 5 characters
-version = [1,0,3]
+version = [1,1,0]
 s=""
 for v in version:
     s += f"{int(v):02x}0a"
@@ -80,6 +97,13 @@ except Exception:
 cmd = [ciderpresscli, "add", "--strip-paths", rel_filename, "SYSTEM"]
 result = subprocess.run(cmd, capture_output=True, text=True, check=True)
 log.info(f"System files added to disk image: {result.stdout} {result.stderr}")
+
+# in release mode builds, remove SYSTEM/BASIC.SYSTEM
+if mode == "release":
+    cmd = [ciderpresscli, "rm", rel_filename, "BASIC.SYSTEM"]
+    result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    log.info(f"System files added to disk image: {result.stdout} {result.stderr}")
+    
 
 for name in os.listdir("basic"):
     if name.upper().endswith(".ABAS"):

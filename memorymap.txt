@@ -85,4 +85,22 @@ Note: there may be 20 entities in the source
 
 
 
+SEU level file contains images and paths from the unfinished SEU game:
+
+LEVEL00#067600
+
+SEU level file: $7600 load address, ships start at $8000
+
+2 bytes wide
+8 scanlines
+4 animations
+
+16*4 = 64 bytes/entity?  16 bytes/image
+
+16 entities, 2bytes/8scanlines, 14x8 pixels, 4 animations
+
+utilities/gen_seu_entity.py will read SEU level file and 
+generate source code for the images in the file in the
+format totally uses. SEU_ENTITY_IMAGES.S adds 16 more
+entities.
 

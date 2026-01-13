@@ -147,18 +147,21 @@ PlayLevel
          jmp   EndOfGame
 
 * update to the next level
+* Note: there are 32 entities and 16 levels of difficulty
 
 NextLevel
-         inc   CurrentLevel
+                          ; Set up the entity pointer (32 with "wrap")
+         inc   CurrentLevel  
          lda   CurrentLevel
-         and   #$0f       ; Entities wrap around at 16 levels
+         and   #$1f       ; Entities wrap around at 32 levels
          clc
          adc   #>EntityImgTables
          sta   EntityFetchByte+2
+                          ; Set up the "difficulty" (16 with clamp)
          lda   CurrentLevel
          cmp   #$10
          blt   :noclamp
-         lda   #$0f       ;levelcap for scoring, entity counts, etc
+         lda   #$0f       ; levelcap for scoring, entity counts, etc
 :noclamp tax
          lda   ScoreTable,x
          sta   ScoreBump+1
@@ -3973,4 +3976,8 @@ ScoreTable                ;Note: clamp to level 16
          dfb   $05
          dfb   $05        ; end of score table
 
-         put   ENTITY_IMAGES.S
+* Entity images start here
+         ds    \          ; page align these
+EntityImgTables
+         put   ENTITY_IMAGES.S      ; 16 levels
+         put   SEU_ENTITY_IMAGES.S  ; 16 more levels

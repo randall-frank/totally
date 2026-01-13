@@ -83,7 +83,7 @@ for l in s.split():
     b0 = gen_byte(l[0:7])
     b1 = gen_byte(l[7:14])
     b2 = gen_byte(l[14:21])
-    print(f"         hex   {b0:02x}{b1:02x}{b2:02x}    ; {l}")
+    print(f"         hex   {b0:02x}{b1:02x}{b2:02x}    ; {l.replace('@','*').replace('-',' ')}")
     n = n + 1
     if n == 7:
         print(f"         hex   {0:02x}{0:02x}{0:02x}    ; ")
