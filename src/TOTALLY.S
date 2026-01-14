@@ -163,6 +163,8 @@ NextLevel
          blt   :noclamp
          lda   #$0f       ; levelcap for scoring, entity counts, etc
 :noclamp tax
+         lda   EntityCountTable,x
+         sta   NumEntities
          lda   ScoreTable,x
          sta   ScoreBump+1
          lda   EntityNTable,x
@@ -307,10 +309,14 @@ FuelDrop lda   #FuelCtrMax
 :notlast rts
 
 
-SetupEntityState
+CurrentLevel dfb 0
+MaxEntities =  16
+NumEntities dfb 0         ; Could change per level??
+
+InitEntityState
          lda   #$00
-         ldx   #$0b       ;11 entities?
-:loop    sta   EntitySTable,x
+         ldx   NumEntities
+:loop    sta   EntitySTable,x ; set all status to 00 (restart)
          dex
          bne   :loop
          sta   MissleY
@@ -327,12 +333,12 @@ SetupEntityState
          jsr   Beep
          rts
 
-CurrentLevel dfb 0
-
 InitScoreAndLevels
          lda   #>EntityImgTables
          sta   EntityFetchByte+2
          ldx   #$00
+         lda   EntityCountTable,x
+         sta   NumEntities
          lda   ScoreTable,x
          sta   ScoreBump+1
          lda   EntityNTable,x
@@ -364,7 +370,7 @@ Beep     ldx   #$06
          rts
 
 PlayPhase0
-         jsr   SetupEntityState
+         jsr   InitEntityState
          jsr   DrawLvlCount
 UpdatePhase0Loop
          jsr   ReadDirJoy
@@ -1694,9 +1700,10 @@ PlayerShipImage6
          dfb   $00
          dfb   $8d
 
+* Move the entities (up to 8 of them)
 
 UpdateEntities
-         lda   #$07
+         lda   NumEntities
          sta   WhichEntity
          jsr   PauseCheck
 :nextentity
@@ -1707,39 +1714,43 @@ UpdateEntities
          bne   :nextentity
          rts
 
+* Move one entity
+
 HandleEntity
          ldx   WhichEntity
          lda   EntitySTable,x
-         cmp   #$00
-         beq   RestartEntity
+         cmp   #$00        
+         beq   RestartEntity   ; reuse the slot if the state is 0
          clc
          asl   A
          bcc   EntityLeftCheck
-         jmp   CheckDeadEntity
+         jmp   ExplodeOrDead ; Entity high bit set
 
 EntityLeftCheck
-         lsr   A
-         lda   EntityXTable,x
+         lsr   A               ; ????
+         lda   EntityXTable,x  ; if less than 14, remove the entity
          cmp   #$0e
          bne   EntityXMovement
-         jmp   DeadEntity
+         jmp   DeadEntity      ; moving off-screen
+
+* Actually move the entity
 
 EntityXMovement
-         dec   EntityXTable,x
+         dec   EntityXTable,x ; move to the left
          nop
          lda   RndTemp    ; TODO: Random
          and   #$20
          cmp   #$20
-         beq   ChangeEntityY
+         beq   ChangeEntityY ; should Y change?
          jmp   DrawEntity
 
 RestartEntity
-         jsr   Random     ; TODO: Random
-         sta   RndTemp
+         jsr   Random     ; Get a random number
+         sta   RndTemp    ; Save it for now
          asl   A
          lsr   A
          clc
-         adc   #$16
+         adc   #$16       ; new random Y value
          ldx   WhichEntity
          sta   EntityYTable,x ;Pick a new Y value
          lda   #$bd
@@ -1759,17 +1770,20 @@ ChangeEntityY
          dex
          bne   :lineupcheck
          ldx   WhichEntity
-         dec   EntityYTable,x ;Move down toward player
+         dec   EntityYTable,x ; Move down toward player
          jmp   DrawEntity
 
 :linedup ldx   WhichEntity
-         inc   EntityYTable,x ;Move up toward player
+         inc   EntityYTable,x ; Move up toward player
          jmp   DrawEntity
+
+* simple case of the entity leaving the screen
 
 DeadEntity
          ldx   WhichEntity ;Erase the entitry and set status to 0.
          lda   #$00
          sta   EntitySTable,x
+                          ; Erase the entity
          lda   EntityYTable,x
          sta   YScanline
          lda   EntityXTable,x
@@ -1837,7 +1851,7 @@ DrawEntity
 :collided
          ldx   WhichEntity
          bmi   :notable
-         lda   #$83       ;Dead entity???
+         lda   #$83       ; Entity just died, 3 explosions before we can reap the slot
          sta   EntitySTable,x
          inc   NEntityKilled
          jsr   DrawLvlCount
@@ -1872,13 +1886,13 @@ EntityFetchByte
          bne   byteloop
          rts
 
-CheckDeadEntity
+ExplodeOrDead
          lsr   A
          cmp   #$00
-         bne   :okentity
-         jmp   DeadEntity
+         bne   DrawExplosion
+         jmp   DeadEntity ; slot can be reused
 
-:okentity
+DrawExplosion
          ldx   WhichEntity
          dec   EntitySTable,x
          lda   EntitySTable,x
@@ -1887,7 +1901,7 @@ CheckDeadEntity
          asl   A
          asl   A
          asl   A
-         jsr   SetupFetch
+         jsr   SetupExpFetch
          lda   EntityYTable,x
          sta   YScanline
          lda   EntityXTable,x
@@ -1897,13 +1911,13 @@ CheckDeadEntity
          lda   #$09
          sta   Count
 :nextscaline
-         jsr   DrawSomeScanline
+         jsr   DrawExpScanline
          inc   YScanline
          dec   Count
          bne   :nextscaline
          rts
 
-DrawSomeScanline
+DrawExpScanline
          lda   #$03
          sta   TempX
          ldy   XByte
@@ -1923,7 +1937,7 @@ EntityExpFetch
          bne   EntityExpFetch
          rts
 
-SetupFetch
+SetupExpFetch
          sta   EntityExpFetch+1
          lda   #$15
          sta   Timer0
@@ -1944,59 +1958,20 @@ TempY    dfb   $18
 XByte    dfb   $09
 YScanline
          dfb   $76
+         
 TempEntityY
-         dfb   $1e
-         ds    10
+         ds    MaxEntities
 EntityXTable
-         dfb   $20
-         dfb   $45
-         dfb   $a7
-         dfb   $8c
-         dfb   $69
-         dfb   $bd
-         dfb   $ac
-         dfb   $3a
-         dfb   $2c
-         dfb   $ae
-         dfb   $4e
-         dfb   $af
-         dfb   $9c
-         dfb   $34
-         dfb   $38
-         dfb   $3c
+         ds    MaxEntities
 EntityYTable
-         dfb   $21
-         dfb   $6d
-         dfb   $1f
-         dfb   $57
-         dfb   $4a
-         dfb   $77
-         dfb   $30
-         dfb   $7b
-         dfb   $61
-         dfb   $4a
-         dfb   $25
-         dfb   $45
-         dfb   $1c
-         dfb   $35
-         dfb   $39
-         dfb   $3d
+         ds    MaxEntities
+
+* EntitySTable: $00=Unused, $01=Alive and running
+* $83=Dead explosion 3, $82=Dead explosion 2,
+* $81=Dead explosion 1, $80=Transition to Unused
+
 EntitySTable
-         dfb   $00
-         dfb   $01
-         dfb   $01
-         dfb   $01
-         dfb   $01
-         dfb   $01
-         dfb   $01
-         dfb   $01
-         dfb   $00
-         dfb   $00
-         dfb   $00
-         dfb   $00
-         dfb   $01
-         dfb   $00
-         asc   ':>#',27,'+/37;?#',27,'+/37;?'
+         ds    MaxEntities
 
 * explosion is 3 images of 3*9+5=$20, so $20*3 = $60 bytes
 * images are 3 bytes wide and 9 scanlines.  
@@ -2004,7 +1979,6 @@ EntitySTable
 * increment code makes offset assumptions
 
             ds \
-
 EntityExpTable  
             dfb   $20
             dfb   $09
@@ -3869,16 +3843,13 @@ ReadHS   jsr    MLI   ; open to read, failure is ok
 SaveHS   jsr    MLI   ; open to write on failure, try create
          dfb    $c8
          da     OpenPraams
-         sta    $300
          bcc    :ok
          jsr    MLI   ; create the file
          dfb    $c0
          da     CreatePraams
-         sta    $301
          jsr    MLI   ; open to write, failure is ok skip
          dfb    $c8
          da     OpenPraams
-         sta    $302
          bcs    :error
 :ok      lda    RefNum
          sta    RefNumW
@@ -3886,11 +3857,9 @@ SaveHS   jsr    MLI   ; open to write on failure, try create
          jsr    MLI   ; write 256 bytes
          dfb    $cb
          da     WriteParams
-         sta    $303
          jsr    MLI   ; close
          dfb    $cc
          da     CloseParams
-         sta   $304
 :error   rts
 
 Filename dfb   $0c
@@ -3940,7 +3909,25 @@ PDOS_io_buffer            ; ProDOS I/O buffer: 1K, page aligned
 
 * per-level tables for various things
 
-EntityNTable              ;Note: clamp to level 16
+EntityCountTable         ; Note: clamped  to level 16
+         dfb   7          ; number of active entites per level [1,N] (MaxEntities max)
+         dfb   7
+         dfb   7
+         dfb   7
+         dfb   7
+         dfb   7
+         dfb   7
+         dfb   7
+         dfb   7
+         dfb   7
+         dfb   7
+         dfb   7
+         dfb   7
+         dfb   7
+         dfb   7
+         dfb   7
+
+EntityNTable              ; Note: clamped  to level 16
          dfb   10        ;number of entites to kill to complete the level
          dfb   12
          dfb   14
@@ -3981,3 +3968,7 @@ ScoreTable                ;Note: clamp to level 16
 EntityImgTables
          put   ENTITY_IMAGES.S      ; 16 levels
          put   SEU_ENTITY_IMAGES.S  ; 16 more levels
+
+
+* Entity path tables start here (8 of them, page aligned)
+         put   ENTITY_PATHS.S
