@@ -22,13 +22,21 @@ p = [0]*250
 p.append(128)
 paths.append(p)
 
-# up
-p = [-1]*250
+# up and close
+p = []
+for i in range(64):
+    p.append(0)
+    p.append(-1)
+p.extend([127]*120)
 p.append(128)
 paths.append(p)
 
-# down
-p = [1]*250
+# down and close
+p = []
+for i in range(64):
+    p.append(0)
+    p.append(1)
+p.extend([127]*120)
 p.append(128)
 paths.append(p)
 
