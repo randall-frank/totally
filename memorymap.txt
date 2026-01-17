@@ -38,6 +38,10 @@ Phase 1
 7,183  167,183
 
 
+Entities:
+  Right start: 189?
+  Left end: 14?
+
 
 This was the original program layout in memory.  There were a LOT of unused
 pages, etc between things.  Moving to assembly (from raw binary), most of

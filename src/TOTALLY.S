@@ -156,7 +156,7 @@ NextLevel
          and   #$1f       ; Entities wrap around at 32 levels
          clc
          adc   #>EntityImgTables
-         sta   EntityFetchByte+2
+         sta   EntityFetch+2
                           ; Set up the "difficulty" (16 with clamp)
          lda   CurrentLevel
          cmp   #$10
@@ -215,7 +215,7 @@ DrawLife3
 DrawLvlEntity
          ldy   #LiveEntityY
          lda   #LivesShipX
-         jsr   DrawEntity2
+         jsr   DrawEntityRaw
          rts
 
 DrawLvlCount
@@ -314,11 +314,22 @@ MaxEntities =  16
 NumEntities dfb 0         ; Could change per level??
 
 InitEntityState
+         lda   NumEntities ; Start the entities
+         sta   WhichEntity
+:nextentity
+         jsr   RestartEntity
+         jsr   Random     ; randomize the X position a bit
+         and   #$1f       ; [0,31] left of the initial X position
+         sta   TGTLO
+         ldy   WhichEntity
+         lda   EntityXTable,y
+         sec
+         sbc   TGTLO
+         sta   EntityXTable,y
+         dec   WhichEntity
+         bne   :nextentity
+
          lda   #$00
-         ldx   NumEntities
-:loop    sta   EntitySTable,x ; set all status to 00 (restart)
-         dex
-         bne   :loop
          sta   MissleY
          sta   NEntityKilled
          sta   NEntityScored
@@ -335,7 +346,7 @@ InitEntityState
 
 InitScoreAndLevels
          lda   #>EntityImgTables
-         sta   EntityFetchByte+2
+         sta   EntityFetch+2
          ldx   #$00
          lda   EntityCountTable,x
          sta   NumEntities
@@ -373,6 +384,7 @@ PlayPhase0
          jsr   InitEntityState
          jsr   DrawLvlCount
 UpdatePhase0Loop
+         jsr   PauseCheck
          jsr   ReadDirJoy
          jsr   UpdateMissileState
          jsr   UpdateEntities
@@ -1255,6 +1267,7 @@ GetInputBtn
          jsr   DivideBy7  ;Calc X pos in bytes (X)
          inx
          inx
+         inx
          stx   MissleXByte ;X byte location + 2
          jmp   movemissile
 
@@ -1705,7 +1718,8 @@ PlayerShipImage6
 UpdateEntities
          lda   NumEntities
          sta   WhichEntity
-         jsr   PauseCheck
+         lda   #$00
+         sta   colliderflag
 :nextentity
          jsr   HandleEntity
          lda   #$00
@@ -1729,7 +1743,7 @@ HandleEntity
 EntityLeftCheck
          lsr   A               ; ????
          lda   EntityXTable,x  ; if less than 14, remove the entity
-         cmp   #$0e
+         cmp   #EntityXMin
          bne   EntityXMovement
          jmp   DeadEntity      ; moving off-screen
 
@@ -1753,10 +1767,15 @@ RestartEntity
          adc   #$16       ; new random Y value
          ldx   WhichEntity
          sta   EntityYTable,x ;Pick a new Y value
-         lda   #$bd
+         lda   #EntityXMax
          sta   EntityXTable,x ;Restart at right side of screen
          lda   #$01
          sta   EntitySTable,x ;Running alive and well
+         jsr   Random
+         and   #$07       ; path [0-7]
+         sta   EntityPTable,x
+         lda   #0
+         sta   EntityITable,x
          rts
 
 ChangeEntityY
@@ -1778,48 +1797,50 @@ ChangeEntityY
          jmp   DrawEntity
 
 * simple case of the entity leaving the screen
+* erase the entity and free up the slot
 
 DeadEntity
-         ldx   WhichEntity ;Erase the entitry and set status to 0.
+         ldx   WhichEntity ; Erase the entitry and set status to 0.
          lda   #$00
-         sta   EntitySTable,x
-                          ; Erase the entity
+         sta   EntitySTable,x ; make the entity reusable
          lda   EntityYTable,x
          sta   YScanline
          lda   EntityXTable,x
          jsr   DivideBy7
          stx   XByte
-         lda   #$09       ;9 scanlines
+         lda   #$09       ; 9 scanlines
          sta   Count
-:More    jsr   Draw3BlackBytes
+:more    jsr   BlackScanLine
          inc   YScanline
          dec   Count
-         bne   :More
+         bne   :more
          rts
 
-Draw3BlackBytes
+BlackScanLine
          ldx   YScanline
          lda   ScanlineTblHI,x
          sta   TGTHI
          lda   ScanlineTblLO,x
          sta   TGTLO
          ldy   XByte
-         lda   #$03
-         sta   TempX
-:nextstore
          lda   #$00
          sta   (TGTLO),y
          iny
-         dec   TempX
-         bne   :nextstore
+         sta   (TGTLO),y
+         iny
+         sta   (TGTLO),y
          rts
 
+* draw a "current" entity at a specific point
+* do not use the Entity*Tables
 
-DrawEntity2               ; A=Xpos, Y=Ypos
+DrawEntityRaw               ; A=Xpos, Y=Ypos
          sty   YScanline
          ldx   #$ff
          stx   WhichEntity
          jmp   @short
+
+* Draw the current entity using the table location
 
 DrawEntity
          ldx   WhichEntity ;Draw entity # from $CF
@@ -1834,12 +1855,12 @@ DrawEntity
          asl   A
          asl   A
          asl   A
-         sta   EntityFetchByte+1 ;Store remainder*32 to lower byte of data fetch
+         sta   EntityFetch+1 ;Store remainder*32 to lower byte of data fetch
          ldx   #$00
          lda   #$09       ;9 scanlines
          sta   Count
 :scanline
-         jsr   DrawEntityScanline
+         jsr   DrawEScanLine
          inc   YScanline
          dec   Count
          bne   :scanline
@@ -1860,7 +1881,7 @@ DrawEntity
 :notable rts
 
 
-DrawEntityScanline
+DrawEScanLine
          lda   #$03
          sta   TempX
          ldy   XByte
@@ -1874,10 +1895,10 @@ DrawEntityScanline
 byteloop lda   (TGTLO),y
          and   #$80       
          cmp   #$80       ; Hit by missile???
-         bne   EntityFetchByte
+         bne   EntityFetch
          lda   #$01
          sta   colliderflag     ; If high bit set, store 1 at $CE
-EntityFetchByte
+EntityFetch
          lda   EntityImgTables,x    ;Fetch entity: HI=from level?  LO=from shift*32
          sta   (TGTLO),y
          inx
@@ -1961,16 +1982,24 @@ YScanline
          
 TempEntityY
          ds    MaxEntities
-EntityXTable
+
+EntityXMin =  14
+EntityXMax =  189
+
+EntityXTable              ; X location of the entities
          ds    MaxEntities
-EntityYTable
+EntityYTable              ; Y location of the entities
+         ds    MaxEntities
+EntityPTable              ; The path number of the entites
+         ds    MaxEntities
+EntityITable              ; The index into the entity path table
          ds    MaxEntities
 
 * EntitySTable: $00=Unused, $01=Alive and running
 * $83=Dead explosion 3, $82=Dead explosion 2,
 * $81=Dead explosion 1, $80=Transition to Unused
 
-EntitySTable
+EntitySTable              ; State of the entities
          ds    MaxEntities
 
 * explosion is 3 images of 3*9+5=$20, so $20*3 = $60 bytes
