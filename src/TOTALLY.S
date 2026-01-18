@@ -1204,12 +1204,21 @@ nonewkey lda   PlayerX
          clc
          adc   DXYtable,y
          sta   $13
-         jsr   DrawPlayerShip ;Erase old ship
+         cmp   PlayerY
+         bne   :redraw
+         lda   $12
+         cmp   PlayerX
+         bne   :redraw
+         lda   #$B1       ; LDA (zp),Y opcode  
+         sta   FakeDraw   ; change STA to LDA to approximate timing...
+:redraw  jsr   DrawPlayerShip ;Erase old ship
          lda   $12
          sta   PlayerX
          lda   $13
          sta   PlayerY
          jsr   DrawPlayerShip ;Draw new ship
+         lda   #$91      ; STA (zp),Y opcode
+         sta   FakeDraw
          rts
 
 * 6 5 4       Z
@@ -1407,7 +1416,7 @@ FetchPlrByte
          lda   PlayerShipImage0,x ;Note: Self modifying code to pick ship via low order byte
          sta   $08        ;Temp store byte to be drawn
          eor   (TGTLO),y
-         sta   (TGTLO),y
+FakeDraw sta   (TGTLO),y
          and   $08        ;Check for collision
          cmp   $08
          beq   :nocollide
@@ -1712,7 +1721,7 @@ PlayerShipImage6
          dfb   $00
          dfb   $8d
 
-* Move the entities (up to 8 of them)
+* Move all of the entities
 
 UpdateEntities
          lda   NumEntities
@@ -1727,7 +1736,7 @@ UpdateEntities
          bne   :nextentity
          rts
 
-* Move one entity
+* Move one entity to the left (maybe up and down)
 
 HandleEntity
          ldx   WhichEntity
@@ -1737,25 +1746,71 @@ HandleEntity
          clc
          asl   A
          bcc   EntityLeftCheck
-         jmp   ExplodeOrDead ; Entity high bit set
+         jmp   ExplodeOrDead   ; Entity high bit set (exploding entity)
 
 EntityLeftCheck
-         lsr   A               ; ????
-         lda   EntityXTable,x  ; if less than 14, remove the entity
+         lda   EntityXTable,x  ; less than xmin (off-screen left), remove entity
          cmp   #EntityXMin
-         bne   EntityXMovement
-         jmp   DeadEntity      ; moving off-screen
+         blt   :out
+
+         lda   EntityYTable,x  ; if less than ymin (off-screen top)
+         cmp   #EntityYMin
+         blt   :out
+
+         lda   EntityYTable,x  ; if greater than ymax (off-screen bottom)
+         cmp   #EntityYMax
+         blt   EntityXMovement
+
+:out     jmp   OffScreenEntity      ; moving off-screen
 
 * Actually move the entity
 
 EntityXMovement
          dec   EntityXTable,x ; move to the left
-         nop
-         lda   RndTemp    ; TODO: Random
-         and   #$20
-         cmp   #$20
-         beq   ChangeEntityY ; should Y change?
+         
+HandlePath
+         lda   EntityYTable,x
+         sta   TempEntityY
+         lda   EntityITable,x ; get the path index
+         sta   FetchP+1   ; low order byte
+         inc   EntityITable,x ; next index in the path
+         lda   EntityPTable,x ; build the patch fetch
+         clc
+         adc   #>EPath0
+         sta   FetchP+2   ; high order byte
+FetchP   lda   EPath0
+* 0 = forward, 1 = down, $ff = up, $7f = toward, $7e = away 
+* $80 = end ; TBD
+         cmp   #$80       ; "end" TODO
+         beq   :done
+         cmp   #$7f       ; "toward"
+         beq   EntityYToward
+         cmp   #$7e       ; "away"
+         beq   EntityYAway
+         clc   
+         adc   TempEntityY
+         sta   EntityYTable,x
+:done    jmp   DrawEntity
+
+EntityYToward             ; Move toward player
+         lda   EntityYTable,x
+         cmp   PlayerY
+         beq   :none      ; EntityY is equal to PlayerY
+         bcc   :add       ; EntityY is less than PlayerY   
+         dec   EntityYTable,x 
          jmp   DrawEntity
+:add     inc   EntityYTable,x 
+:none    jmp   DrawEntity
+
+EntityYAway               ; Move away from player
+         lda   EntityYTable,x
+         cmp   PlayerY
+         beq   :none      ; EntityY is equal to PlayerY
+         bcc   :add       ; EntityY is less than PlayerY   
+         inc   EntityYTable,x 
+         jmp   DrawEntity
+:add     dec   EntityYTable,x 
+:none    jmp   DrawEntity
 
 RestartEntity
          jsr   Random     ; Get a random number
@@ -1777,28 +1832,10 @@ RestartEntity
          sta   EntityITable,x
          rts
 
-ChangeEntityY
-         ldx   WhichEntity
-         lda   EntityYTable,x
-         sta   TempEntityY
-         ldx   PlayerY
-:lineupcheck
-         cpx   TempEntityY
-         beq   :linedup
-         dex
-         bne   :lineupcheck
-         ldx   WhichEntity
-         dec   EntityYTable,x ; Move down toward player
-         jmp   DrawEntity
-
-:linedup ldx   WhichEntity
-         inc   EntityYTable,x ; Move up toward player
-         jmp   DrawEntity
-
 * simple case of the entity leaving the screen
 * erase the entity and free up the slot
 
-DeadEntity
+OffScreenEntity
          ldx   WhichEntity ; Erase the entitry and set status to 0.
          lda   #$00
          sta   EntitySTable,x ; make the entity reusable
@@ -1910,7 +1947,7 @@ ExplodeOrDead
          lsr   A
          cmp   #$00
          bne   DrawExplosion
-         jmp   DeadEntity ; slot can be reused
+         jmp   OffScreenEntity ; slot can be reused
 
 DrawExplosion
          ldx   WhichEntity
@@ -1982,8 +2019,10 @@ YScanline
 TempEntityY
          ds    MaxEntities
 
-EntityXMin =  14
+EntityXMin =  10
 EntityXMax =  189
+EntityYMin =  9
+EntityYMax =  176         
 
 EntityXTable              ; X location of the entities
          ds    MaxEntities

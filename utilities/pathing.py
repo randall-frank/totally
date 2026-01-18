@@ -6,14 +6,14 @@ paths = []
 # 1 = up
 # $ff = down
 # $7f = toward
-# $7e = away
+# $7e = away  NOTE: do not use this yet
 # $80 = end
 
 # homing
 p = []
 for i in range(12):
-    p.extend([0]*10)
-    p.extend([127]*10)
+    p.extend([0]*0)
+    p.extend([127]*20)
 p.append(128)
 paths.append(p)
 
@@ -52,9 +52,9 @@ paths.append(p)
 
 # saw 2
 p = []
-for i in range(12):
-    p.extend([1]*10)
-    p.extend([-1]*10)
+for i in range(6):
+    p.extend([1]*20)
+    p.extend([-1]*20)
 p.append(128)
 paths.append(p)
 
@@ -75,10 +75,10 @@ paths.append(p)
 
 p = []
 for i in range(6):
-    p.extend([0]*12)
-    p.extend([127]*7)
-    p.extend([0]*12)
-    p.extend([126]*7)
+    p.extend([0]*10)
+    p.extend([127]*9)
+    p.extend([0]*10)
+    p.extend([127]*9)
 p.append(128)
 paths.append(p)
 

@@ -1,34 +1,34 @@
          ds  \ 
 EPath0     ; Length=241
-         hex  0000000000000000
-         hex  00007f7f7f7f7f7f
-         hex  7f7f7f7f00000000
-         hex  0000000000007f7f
          hex  7f7f7f7f7f7f7f7f
-         hex  0000000000000000
-         hex  00007f7f7f7f7f7f
-         hex  7f7f7f7f00000000
-         hex  0000000000007f7f
          hex  7f7f7f7f7f7f7f7f
-         hex  0000000000000000
-         hex  00007f7f7f7f7f7f
-         hex  7f7f7f7f00000000
-         hex  0000000000007f7f
          hex  7f7f7f7f7f7f7f7f
-         hex  0000000000000000
-         hex  00007f7f7f7f7f7f
-         hex  7f7f7f7f00000000
-         hex  0000000000007f7f
          hex  7f7f7f7f7f7f7f7f
-         hex  0000000000000000
-         hex  00007f7f7f7f7f7f
-         hex  7f7f7f7f00000000
-         hex  0000000000007f7f
          hex  7f7f7f7f7f7f7f7f
-         hex  0000000000000000
-         hex  00007f7f7f7f7f7f
-         hex  7f7f7f7f00000000
-         hex  0000000000007f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
          hex  7f7f7f7f7f7f7f7f
          hex  80
          ds  \ 
@@ -169,34 +169,34 @@ EPath4     ; Length=241
          ds  \ 
 EPath5     ; Length=241
          hex  0101010101010101
-         hex  0101ffffffffffff
-         hex  ffffffff01010101
-         hex  010101010101ffff
+         hex  0101010101010101
+         hex  01010101ffffffff
+         hex  ffffffffffffffff
          hex  ffffffffffffffff
          hex  0101010101010101
-         hex  0101ffffffffffff
-         hex  ffffffff01010101
-         hex  010101010101ffff
+         hex  0101010101010101
+         hex  01010101ffffffff
+         hex  ffffffffffffffff
          hex  ffffffffffffffff
          hex  0101010101010101
-         hex  0101ffffffffffff
-         hex  ffffffff01010101
-         hex  010101010101ffff
+         hex  0101010101010101
+         hex  01010101ffffffff
+         hex  ffffffffffffffff
          hex  ffffffffffffffff
          hex  0101010101010101
-         hex  0101ffffffffffff
-         hex  ffffffff01010101
-         hex  010101010101ffff
+         hex  0101010101010101
+         hex  01010101ffffffff
+         hex  ffffffffffffffff
          hex  ffffffffffffffff
          hex  0101010101010101
-         hex  0101ffffffffffff
-         hex  ffffffff01010101
-         hex  010101010101ffff
+         hex  0101010101010101
+         hex  01010101ffffffff
+         hex  ffffffffffffffff
          hex  ffffffffffffffff
          hex  0101010101010101
-         hex  0101ffffffffffff
-         hex  ffffffff01010101
-         hex  010101010101ffff
+         hex  0101010101010101
+         hex  01010101ffffffff
+         hex  ffffffffffffffff
          hex  ffffffffffffffff
          hex  80
          ds  \ 
@@ -236,31 +236,31 @@ EPath6     ; Length=253
          ds  \ 
 EPath7     ; Length=229
          hex  0000000000000000
-         hex  000000007f7f7f7f
-         hex  7f7f7f0000000000
-         hex  000000000000007e
-         hex  7e7e7e7e7e7e0000
-         hex  0000000000000000
          hex  00007f7f7f7f7f7f
-         hex  7f00000000000000
-         hex  00000000007e7e7e
-         hex  7e7e7e7e00000000
+         hex  7f7f7f0000000000
+         hex  00000000007f7f7f
+         hex  7f7f7f7f7f7f0000
          hex  0000000000000000
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f00000000000000
+         hex  0000007f7f7f7f7f
+         hex  7f7f7f7f00000000
+         hex  0000000000007f7f
          hex  7f7f7f7f7f7f7f00
          hex  0000000000000000
-         hex  0000007e7e7e7e7e
-         hex  7e7e000000000000
-         hex  0000000000007f7f
-         hex  7f7f7f7f7f000000
-         hex  0000000000000000
-         hex  007e7e7e7e7e7e7e
-         hex  0000000000000000
+         hex  007f7f7f7f7f7f7f
+         hex  7f7f000000000000
          hex  000000007f7f7f7f
-         hex  7f7f7f0000000000
-         hex  000000000000007e
-         hex  7e7e7e7e7e7e0000
+         hex  7f7f7f7f7f000000
+         hex  000000000000007f
+         hex  7f7f7f7f7f7f7f7f
          hex  0000000000000000
          hex  00007f7f7f7f7f7f
+         hex  7f7f7f0000000000
+         hex  00000000007f7f7f
+         hex  7f7f7f7f7f7f0000
+         hex  0000000000000000
+         hex  7f7f7f7f7f7f7f7f
          hex  7f00000000000000
-         hex  00000000007e7e7e
-         hex  7e7e7e7e80
+         hex  0000007f7f7f7f7f
+         hex  7f7f7f7f80
