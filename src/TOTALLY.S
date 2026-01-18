@@ -384,8 +384,8 @@ PlayPhase0
          jsr   InitEntityState
          jsr   DrawLvlCount
 UpdatePhase0Loop
+         jsr   ReadDirJoy ; careful, this is a self modifying JSR
          jsr   PauseCheck
-         jsr   ReadDirJoy
          jsr   UpdateMissileState
          jsr   UpdateEntities
          lda   PlayrDiedFlg
@@ -412,10 +412,10 @@ EntityCntChk
 
 :nohit2  lda   NEntityKilled ;Need to figure out $FF and $6F usage
          cmp   NEntityScored
-         bne   ScoreDeadEnity
+         bne   ScoreDeadEntity
          jmp   UpdatePhase0Loop
 
-ScoreDeadEnity
+ScoreDeadEntity
          sta   NEntityScored
 ScoreBump
          lda   #$00       ;Self modifying increment, changes with level
@@ -1263,9 +1263,10 @@ GetInputBtn
          inx
          stx   MissleY    ;Y+4?
          sta   KBDSTRB
-         lda   PlayerX    ;X?
+         lda   PlayerX    ;X + 2 (so the ship won't run into it)
+         clc
+         adc   #2
          jsr   DivideBy7  ;Calc X pos in bytes (X)
-         inx
          inx
          inx
          stx   MissleXByte ;X byte location + 2
@@ -1355,9 +1356,7 @@ UpdateMissileState
 
 ReadJoystickBtn
          lda   BUTN0      ;Convert joytick button into space key
-         and   #$80
-         cmp   #$80
-         beq   :retspace
+         bmi   :retspace
          lda   #$00
          rts
 
@@ -2732,17 +2731,26 @@ INITKBD  lda   #>ReadDirKbd
          sta   GetInputBtn+2
          rts
 
-ESCPatchToHandleEntity
-         lda   KBD
-         cmp   #$9b
-         beq   ESCPatchToHandleEntity
-         jmp   HandleEntity
+WaitB1Down
+:a       lda   BUTN1      ; wait for button to be pressed
+         bpl   :a
+         rts
+
+WaitB1Up
+:b       lda   BUTN1      ; wait for button to be released
+         bmi   :b
+         rts
 
 PauseCheck         
          lda   KBD
          cmp   #$9b
          beq   PauseCheck
-         rts
+         lda   BUTN1
+         bpl   :ok
+         jsr   WaitB1Up
+         jsr   WaitB1Down
+         jsr   WaitB1Up
+:ok      rts
 
 TickCount8
          dfb   $08
