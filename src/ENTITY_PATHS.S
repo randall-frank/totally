@@ -1,38 +1,14 @@
+P_FWD = 0
+P_CLOSE = 1
+P_UCLOSE = 2
+P_DCLOSE = 3
+P_SAW1 = 4
+P_SAW2 = 5
+P_COS = 6
+P_SCLOSE = 7
+
          ds  \ 
-EPath0     ; Length=241
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  7f7f7f7f7f7f7f7f
-         hex  80
-         ds  \ 
-EPath1     ; Length=251
+EPath0     ; Length=251
          hex  0000000000000000
          hex  0000000000000000
          hex  0000000000000000
@@ -66,23 +42,22 @@ EPath1     ; Length=251
          hex  0000000000000000
          hex  000080
          ds  \ 
-EPath2     ; Length=249
-         hex  00ff00ff00ff00ff
-         hex  00ff00ff00ff00ff
-         hex  00ff00ff00ff00ff
-         hex  00ff00ff00ff00ff
-         hex  00ff00ff00ff00ff
-         hex  00ff00ff00ff00ff
-         hex  00ff00ff00ff00ff
-         hex  00ff00ff00ff00ff
-         hex  00ff00ff00ff00ff
-         hex  00ff00ff00ff00ff
-         hex  00ff00ff00ff00ff
-         hex  00ff00ff00ff00ff
-         hex  00ff00ff00ff00ff
-         hex  00ff00ff00ff00ff
-         hex  00ff00ff00ff00ff
-         hex  00ff00ff00ff00ff
+EPath1     ; Length=241
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
          hex  7f7f7f7f7f7f7f7f
          hex  7f7f7f7f7f7f7f7f
          hex  7f7f7f7f7f7f7f7f
@@ -100,23 +75,49 @@ EPath2     ; Length=249
          hex  7f7f7f7f7f7f7f7f
          hex  80
          ds  \ 
-EPath3     ; Length=249
-         hex  0001000100010001
-         hex  0001000100010001
-         hex  0001000100010001
-         hex  0001000100010001
-         hex  0001000100010001
-         hex  0001000100010001
-         hex  0001000100010001
-         hex  0001000100010001
-         hex  0001000100010001
-         hex  0001000100010001
-         hex  0001000100010001
-         hex  0001000100010001
-         hex  0001000100010001
-         hex  0001000100010001
-         hex  0001000100010001
-         hex  0001000100010001
+EPath2     ; Length=217
+         hex  00ffff00ffff00ff
+         hex  ff00ffff00ffff00
+         hex  ffff00ffff00ffff
+         hex  00ffff00ffff00ff
+         hex  ff00ffff00ffff00
+         hex  ffff00ffff00ffff
+         hex  00ffff00ffff00ff
+         hex  ff00ffff00ffff00
+         hex  ffff00ffff00ffff
+         hex  00ffff00ffff00ff
+         hex  ff00ffff00ffff00
+         hex  ffff00ffff00ffff
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  7f7f7f7f7f7f7f7f
+         hex  80
+         ds  \ 
+EPath3     ; Length=217
+         hex  0001010001010001
+         hex  0100010100010100
+         hex  0101000101000101
+         hex  0001010001010001
+         hex  0100010100010100
+         hex  0101000101000101
+         hex  0001010001010001
+         hex  0100010100010100
+         hex  0101000101000101
+         hex  0001010001010001
+         hex  0100010100010100
+         hex  0101000101000101
          hex  7f7f7f7f7f7f7f7f
          hex  7f7f7f7f7f7f7f7f
          hex  7f7f7f7f7f7f7f7f

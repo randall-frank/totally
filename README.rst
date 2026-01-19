@@ -23,48 +23,64 @@ Overview
 --------
 This game was written as an experiment while in high school.  It was never
 fully completed, but it reached a reasonably playable state in 1983. This 
-version is a snapshot of that state.
+is a snapshot of that state.
 
-It is a simple multi-level side shooter with a "boss" between levels.
+It is a simple, multi-level side shooter with a "boss" between levels.
 It can be played with keyboard or joystick, but a joystick is strongly 
-recommended.  There are 16 "waves" of different looking (similar behaving)
+recommended.  There are 32 "waves" of different looking (similar behaving)
 enemies with each level requiring that more enemies be dispatched before
 moving on to the "boss".  
 
 Details
 -------
 The source presented here is written entirely in Merlin 6502 assembly.  However,
-the original game was not written from source code of any kind.  It was written
-entirely by typing in 6502 opcodes by hand or by using the mini-assembler. The
-source code included in this repo was generated with the help of 
-`SourceGen <https://6502bench.com/>`_ (without which I probably would not
-have started this project).
+the original game was not written from "source code" of any kind.  It was written
+by typing in 6502 opcodes by hand or using built-in mini-assembler. 
+None of the original source code was written on paper, it was pretty much generated
+on the fly as typed, saved and ran.
+The source code in this repo was generated with the help of 
+`SourceGen <https://6502bench.com/>`_ (without which this project would probably
+never have been started).
 
-There are a couple of very interesting side effects of the hand-generated nature
-of this application.  First, I did not have all of the opcodes memorized. Thus,
-there is a tendency to use instructions due to 'finger memory' rather that true
-appropriateness.  Second, rarely did a function exceed 40-50 bytes.  I did not
-always know how long a function might be and where it might sit in memory.  None
-of the original source code was written on paper, it was pretty much generated
-on the fly as I typed it in, saved and ran.
+There are some interesting side effects of the hand-generated nature
+of the code.  First, I did not have all of the opcodes memorized. Thus,
+there is a tendency to use instruction sequences I did have memorized due to 
+'finger memory' rather than appropriateness.  Second, rarely did a function 
+exceed 40-50 bytes as I might need to re-enter code when things relocated.  
 
-As as result, many functions were spaced ~32 bytes apart and often page aligned
-to avoid having to retype large blocks of code.  Almost 6k of unused memory was 
-reclaimed after the conversion to Merlin source code when the code was tightened 
-up.  A lot of head/tail patching of routines which popped up due to the original
-development environment have been removed.
+Often, I did not know how long a function might be and thus where it might
+sit in memory.  As as result, many functions were spaced ~32 bytes apart and 
+often page aligned to avoid having to retype large blocks of code.  Almost 6k of 
+unused memory was reclaimed after the conversion to Merlin source code when the 
+unused blocks of bytes were removed.  A lot of head/tail patching of routines, 
+which popped up due to the original development environment, have been removed
+before being committed to this repo.
 
+To ProDOS
+~~~~~~~~~
 The game was originally written for DOS 3.3.  It stored high-scores in a single
 sector in the middle of track $11 via raw RWTS calls.  These have been replaced
 with standard ProDOS I/O calls and the program itself has been converted into
-a standard ProDOS .SYSTEM file.
+a standard ProDOS .SYSTEM file.  High scores are now stored in the file named
+`TOTALLY.HIGH`.
 
+Python Utilities
+~~~~~~~~~~~~~~~~
 Several python tools were used to break out tables into individual source code
 files and format things like images.  These are not used during the build process,
-but are included in the 'utilities' directory.
+but are included in the 'utilities' directory.  Several of them generate simple
+tables: division by 7, splash screen extraction, entity image extraction, 
+path generation, etc. 
 
-There is a build script in this repo that is capable of generating a .po file 
-from the sources.  It requires several tools to be installed:
+One interesting addition is the addition of 16 additional level `ships`.  These
+came from another, incomplete game I had been working on, called `SEU`.  There
+is a script that can extract animated enemies from a SEU level file.  These
+were added to the original 16 enemies in this version. 
+
+Building
+~~~~~~~~
+There is a build script (`build.py`) in this repo that is capable of 
+generating a .po file from the sources.  It requires several tools to be installed:
 
 - Python
 - `Merlin32 Assembler <https://brutaldeluxe.fr/products/crossdevtools/merlin/>`_
@@ -87,12 +103,14 @@ One can adjust the pathnames to CiderPress and Merlin at the top of the build.py
 Documentation and Issues
 ------------------------
 
-The game proceeds in a series of levels.  There are 16 levels and you get refueled
-at the start of each level.  If you complete the level, your remaining fuel is 
-added to your score before moving to the next level.  Each level has two phases:
-'Alien' and 'Boss'.  Every level has a different looking alien ship.  You have
-three ships before your run ends.  You lose a ship if it runs into any aliens,
-stars or the walls of the play field. 
+The game proceeds in a series of levels.  There are 16 core difficulty levels and 
+another 16 levels with differing enemy ship images.  You must clear the enemies
+and beat the "boss" to complete the level.  If you complete the level, your 
+remaining fuel is added to your score before you refuel and move to the next level.  
+
+Each level has two phases: 'Alien' and 'Boss'.  Every level has a different 
+looking alien ship.  You have three ships before your run ends.  You lose a 
+ship if it runs into any aliens, stars or the walls of the play field. 
 
 .. image:: splash.png
    :alt: First Phase
@@ -100,7 +118,8 @@ stars or the walls of the play field.
 
 
 After selecting (k)eyboard or (j)oystick control, the game begins in the "Alien"
-phase.  In this phase, aliens come at your ship from the right side of the screen.
+phase.  Note, one may also use control-B to execute a ProDOS 'BYE' command at
+this prompt.  In this phase, aliens come at your ship from the right side of the screen.
 To move to the next phase, some number of aliens need to be destroyed. 
 
 
@@ -114,8 +133,8 @@ and a picture of this level's alien.  Below it, the number of aliens
 that still need to be destroyed to complete the level is displayed.  When that
 number drops to '00', the game switches to the "Boss" phase.
 
-In this phase, your ship is placed in a moving star field.  You must avoid
-all of the stars to stay alive and you cannot destroy them.  On the right
+In the "Boss" phase, your ship is placed in a moving star field.  You must avoid
+all of the stars to stay alive and you cannot destroy the stars.  On the right
 of the play field, there are three bands of "walls" behind which the boss
 enemy scrolls from top to bottom.
 
@@ -130,7 +149,6 @@ pass through.  It only takes one shot to kill the boss, but you must dodge
 stars while chewing up the walls with your shots.  Once the boss is killed,
 your remaining fuel will drain and you will score points for that fuel.
 
-
 Then it is off to the next level where the two phases repeat again.  If you
 achieved a high score, you will be able to enter your initials.  The top 10
 scores are saved in the file `TOTALLY.HIGH`.  You can delete the file to
@@ -144,14 +162,18 @@ burn a 5.25" disk with the image.  Thanks to the great work by Chris Torrence
 and Michael Morrison on the `Apple2TS <https://github.com/ct6502/apple2ts>`_ browser 
 hosted Apple II emulator, one can play the game via a web browser.  
 
-`Play Totally in a browser <https://apple2ts.com/?appmode=game&theme=dark#https://github.com/randall-frank/totally/releases/download/v1.0.0/Totally_Release.po>`_
+`Play Totally in a browser <https://apple2ts.com/?appmode=game&theme=dark#https://github.com/randall-frank/totally/releases/download/v1.3.0/Totally_Release.po>`_
+
+In most situations, Apple2TS is highly recommended.  However, playing this 
+game on the keyboard can be a challenge, so emulators with joystick support
+are generally recommended.
 
 Please feel free to post issues and other questions at `Totally Issues
 <https://github.com/randall-frank/totally/issues>`_. This is the best place
 to post questions and code.
 
-The game is also hosted on `itch.io <https://myleftgoat.itch.io/totally?secret=KAHoD7ND9c1s1VUuyaemPRR8Mw>`_ which provides
-a simpler download option and forum to discuss more gameplay related issues.
+The game is also hosted on `itch.io <https://myleftgoat.itch.io/totally?secret=KAHoD7ND9c1s1VUuyaemPRR8Mw>`_ 
+which provides a simpler download option and forum to discuss more gameplay related issues.
 
 
 Things To Do

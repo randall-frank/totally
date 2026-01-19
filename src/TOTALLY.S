@@ -1793,7 +1793,7 @@ FetchP   lda   EPath0
 * 0 = forward, 1 = down, $ff = up, $7f = toward, $7e = away 
 * $80 = end ; TBD
          cmp   #$80       ; "end" TODO
-         beq   :done
+         beq   :doend
          cmp   #$7f       ; "toward"
          beq   EntityYToward
          cmp   #$7e       ; "away"
@@ -1801,7 +1801,24 @@ FetchP   lda   EPath0
          clc   
          adc   TempEntityY
          sta   EntityYTable,x
-:done    jmp   DrawEntity
+         jmp   DrawEntity
+:doend   jsr   NewPath
+         jmp   DrawEntity
+
+RestartEntity
+         jsr   Random     ; Get a random number
+                          ; sta   RndTemp    ; Save it for now
+         asl   A
+         lsr   A
+         clc
+         adc   #$16       ; new random Y value
+         ldx   WhichEntity
+         sta   EntityYTable,x ;Pick a new Y value
+         lda   #EntityXMax
+         sta   EntityXTable,x ;Restart at right side of screen
+         lda   #$01
+         sta   EntitySTable,x ;Running alive and well
+         jmp   NewPath
 
 EntityYToward             ; Move toward player
          lda   EntityYTable,x
@@ -1823,21 +1840,23 @@ EntityYAway               ; Move away from player
 :add     dec   EntityYTable,x 
 :none    jmp   DrawEntity
 
-RestartEntity
-         jsr   Random     ; Get a random number
-         sta   RndTemp    ; Save it for now
-         asl   A
-         lsr   A
+* Pick a path for the 'x' entity
+
+NewPath  jsr   Random
+         and   #$0f       ; path [0,15]
+         sta   TGTLO
+         lda   CurrentLevel
+         cmp   #$10
+         blt   :noclamp
+         lda   #$0f
+:noclamp asl              ; 16 entries/level
+         asl
+         asl
+         asl
          clc
-         adc   #$16       ; new random Y value
-         ldx   WhichEntity
-         sta   EntityYTable,x ;Pick a new Y value
-         lda   #EntityXMax
-         sta   EntityXTable,x ;Restart at right side of screen
-         lda   #$01
-         sta   EntitySTable,x ;Running alive and well
-         jsr   Random
-         and   #$07       ; path [0-7]
+         adc   TGTLO        
+         tay              ; Y is index into the level path distribution
+         lda   PathDist_lvl_0,y
          sta   EntityPTable,x
          lda   #0
          sta   EntityITable,x
@@ -4074,11 +4093,17 @@ ScoreTable                ;Note: clamp to level 16
          dfb   $05        ; end of score table
 
 * Entity images start here
+
          ds    \          ; page align these
 EntityImgTables
          put   ENTITY_IMAGES.S      ; 16 levels
          put   SEU_ENTITY_IMAGES.S  ; 16 more levels
 
-
 * Entity path tables start here (8 of them, page aligned)
+
          put   ENTITY_PATHS.S
+
+* Entity path distribution tables start here
+
+         put   PATH_DIST.S
+
