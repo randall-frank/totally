@@ -63,7 +63,6 @@ PTRIG       equ   $C070      ; Trigger (start) paddle measurement
 * ROM routines
 
 REBOOT      equ   $e000
-PADDLE_READ equ   $fb1e      ;read paddle specified by X-reg, return in Y-reg
 
          org   $2000      ; start of all semi-well behaved .SYSTEM files
 
@@ -309,6 +308,7 @@ FuelDrop lda   #FuelCtrMax
 :notlast rts
 
 
+StartingLevel dfb 0
 CurrentLevel dfb 0
 MaxEntities =  16
 NumEntities dfb 0         ; Could change per level??
@@ -345,19 +345,30 @@ InitEntityState
          rts
 
 InitScoreAndLevels
-         lda   #>EntityImgTables
-         sta   EntityFetch+2
-         ldx   #$00
+         lda   StartingLevel
+         sta   CurrentLevel
+         cmp   #$10
+         blt   :noclamp
+         lda   #$0f       ; levelcap
+:noclamp tax
          lda   EntityCountTable,x
          sta   NumEntities
          lda   ScoreTable,x
          sta   ScoreBump+1
          lda   EntityNTable,x
          sta   EntityCntChk+1
-         stx   CurrentLevel
+
+         lda   CurrentLevel
+         and   #$1f       ; Entities wrap around at 32 levels
+         clc
+         adc   #>EntityImgTables
+         sta   EntityFetch+2
+
+         ldx   #0
          stx   SCORELO    ;Reset score to 000000
          stx   SCOREMID
          stx   SCOREHI
+
          lda   #$00
          jsr   IncDrawScore
          jsr   DrawLvlEntity
@@ -2720,10 +2731,15 @@ DisplayHighScore
          sta   KBDSTRB
 
 StartTotally
+         lda   BUTN1
+         bmi   :stlevel
          lda   BUTN0
          bmi   :dojoy
          lda   KBD
-         cmp   #$ca       ;'J'?
+         cmp   #$82       ; ^b
+         bne   :notbye
+         jmp   Bye
+:notbye  cmp   #$ca       ; 'J'?
          bne   :notjoystick
 :dojoy   jsr   INITJOY
          jmp   PlayAGame
@@ -2733,6 +2749,18 @@ StartTotally
          bne   StartTotally
          jsr   INITKBD
          jmp   PlayAGame
+
+:stlevel lda   KBD
+         cmp   #$be       ; >
+         beq   :up
+         cmp   #$bc       ; <
+         bne   StartTotally
+         dec   StartingLevel
+         sta   KBDSTRB
+         jmp   StartTotally
+:up      inc   StartingLevel
+         sta   KBDSTRB
+         jmp   StartTotally
 
 HighScoreUpdate
          jsr   DisplayHighList
@@ -2782,7 +2810,7 @@ WaitB1Up
 
 PauseCheck         
          lda   KBD
-         cmp   #$9b
+         cmp   #$9b       ; ESC
          beq   PauseCheck
          lda   BUTN1
          bpl   :ok
@@ -2790,6 +2818,12 @@ PauseCheck
          jsr   WaitB1Down
          jsr   WaitB1Up
 :ok      rts
+
+Bye      jsr   MLI
+         hex   65         ; bye
+         da    ByeParam
+         rts
+ByeParam hex   04000000000000
 
 TickCount8
          dfb   $08
