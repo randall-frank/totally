@@ -2787,7 +2787,7 @@ HighScoreUpdate
          jsr   DrawEmptyPlayfield
          jsr   DrawGameTitle
          lda   KBDSTRB
-         jmp   SaveHS     ;Save highscore sector
+         jmp   SaveHS     ;Save highscore file
 
 INITJOY  lda   #>ReadDirJoy
          sta   UpdatePhase0Loop+2
@@ -3716,16 +3716,24 @@ DigitImgTable
          hex   1441411440400000 ; 9
          hex   0000000000000800 ; '.'
 
+* Enter 3 chars (no back, etc)
+
 EnterNewInitials
-         lda   #$0f
+:rpt0    lda   #$0f
          sta   MON_CH
          jsr   InputOneInitialChar
-         lda   #$11
+         cmp   #27
+         beq   :rpt0
+:rpt1    lda   #$11
          sta   MON_CH
          jsr   InputOneInitialChar
+         cmp   #27
+         beq   :rpt0
          lda   #$13
          sta   MON_CH
          jsr   InputOneInitialChar
+         cmp   #27
+         beq   :rpt1
          rts
 
 InputOneInitialChar
@@ -3733,37 +3741,47 @@ InputOneInitialChar
          sta   XTMP
          lda   #$40
          sta   YTMP
-         lda   #$1c
+         lda   #$1c       ; underscore
          sta   GLYPH
          jsr   DrawChar
-         jsr   GetOneInitial
+         jsr   GetOneInitial   ;  Note: #27 is "backspace" (and empty)
+         pha
          sta   GLYPH
          lda   MON_CH
          sta   XTMP
          lda   #$40
          sta   YTMP
          jsr   DrawChar
+         pla
          rts
 
 GetOneKey
          sta   KBDSTRB
 :wait    lda   KBD
-         tay
-         rol   A
-         bcc   :wait
-         tya
+         bpl   :wait
+         cmp   #136       ; left arrow
+         beq   :backsp
+         cmp   #255       ; delete
+         beq   :backsp
          cmp   #$a0
          bne   :haveachar
          lda   #$1a
          rts
+:backsp  lda   #27
+         rts
 
 :haveachar
-         ldx   #$00
-         ldy   #$c1
+         cmp   #$e1       ; 'a'
+         blt   :notlow
+         cmp   #$fb       ; 'z' + 1
+         bge   :notlow
+         and   #$df       ; clear bit 5 to uppercase char
+:notlow  ldx   #$00
+         ldy   #$c1       ; 'A'
          sta   MON_CV
 :loop    cpy   MON_CV
          beq   :done
-         cpy   #$da
+         cpy   #$da       ; 'Z'
          beq   GetOneKey
          inx
          iny

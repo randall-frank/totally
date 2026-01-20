@@ -164,9 +164,8 @@ hosted Apple II emulator, one can play the game via a web browser.
 
 `Play Totally in a browser <https://apple2ts.com/?appmode=game&theme=dark#https://github.com/randall-frank/totally/releases/download/v1.3.0/Totally_Release.po>`_
 
-In most situations, Apple2TS is highly recommended.  However, playing this 
-game on the keyboard can be a challenge, so emulators with joystick support
-are generally recommended.
+Playing this game on the keyboard can be a challenge, so a physical joystick 
+or emulator with joystick support is generally recommended.
 
 Please feel free to post issues and other questions at `Totally Issues
 <https://github.com/randall-frank/totally/issues>`_. This is the best place
