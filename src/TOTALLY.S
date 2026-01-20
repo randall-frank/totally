@@ -1188,7 +1188,13 @@ ExplodeImage2
 ReadDirKbd
          jsr   JoystickTiming ; fake timing else keyboard version is too fast
          lda   KBD
-         sta   $15
+         cmp   #225       ; 'a' -> 'A'
+         bne   :not_a
+         lda   #193
+:not_a   cmp   #250       ; 'z' -> 'Z'
+         bne   :not_z
+         lda   #218         
+:not_z   sta   $15
          ldy   #$00
 :nextkey lda   KeyStrokeTable,y
          cmp   $15
@@ -2758,15 +2764,19 @@ StartTotally
          cmp   #$82       ; ^b
          bne   :notbye
          jmp   Bye
-:notbye  cmp   #$ca       ; 'J'?
+:notbye  cmp   #$ca       ; 'J'
+         beq   :dojoy
+         cmp   #$ea       ; 'j'
          bne   :notjoystick
 :dojoy   jsr   INITJOY
          jmp   PlayAGame
 
 :notjoystick
-         cmp   #$cb       ;'K'?
+         cmp   #$cb       ;'K'
+         beq   :dokey
+         cmp   #$eb       ;'k'
          bne   StartTotally
-         jsr   INITKBD
+:dokey   jsr   INITKBD
          jmp   PlayAGame
 
 :stlevel lda   KBD
