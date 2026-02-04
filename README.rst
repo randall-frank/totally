@@ -87,8 +87,8 @@ generating a .po file from the sources.  It requires several tools to be install
 - `CiderPress II <https://ciderpress2.com/>`_
 
 If one places the CiderPress CLI in a subdirectory named 'ciderpress' (ciderpress/cp2.exe)
-and places the Merlin package in a subdirectory named 'merlin32' 
-(merlin32\\Windows\\Merlin32.exe), then the following commands will build
+and places the Merlin package in a subdirectory named 'merlin' 
+(e.g. merlin\\Merlin32_v1.2_b2\\Windows\\Merlin32.exe), then the following commands will build
 the `Totally_Release.po` file:
 
 .. code::
@@ -99,6 +99,8 @@ the `Totally_Release.po` file:
 
 
 One can adjust the pathnames to CiderPress and Merlin at the top of the build.py file.
+The build script will attempt to download a Merlin32 build from the web if one cannot
+be found locally.
 
 Documentation and Issues
 ------------------------

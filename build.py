@@ -1,9 +1,49 @@
 import argparse
+import glob
+import platform
 import logging
 import shutil
 import subprocess
 import sys
 import os
+import urllib.request
+import zipfile
+
+# Note: these paths are for local Windows installs.  All of these tools
+# can be installed under Linux as well, but these paths will need to change.
+plat = platform.system()
+assembler = ".\\merlin\\Merlin32_v1.2_b2\\windows\\merlin32.exe"
+assembler_libdir = ".\\merlin\\Merlin32_v1.2_b2\\library\\"
+ciderpresscli = ".\\ciderpress\\cp2.exe"
+
+
+def merlin_check(app, libdir):
+    # If merlin is present, do nothing
+    if not os.path.exists("merlin"):
+        # pull a version from the web
+        url="https://brutaldeluxe.fr/products/crossdevtools/merlin/Merlin32_v1.2.zip"
+        try:
+            log.info(f"Attempting to pull merlin32 from: {url}")
+            _ = urllib.request.urlretrieve(url, "merlin.zip")
+        except Exception as e:
+            log.warning(f"Download failed: {e}")
+            return app, libdir
+        # unpack
+        try:
+            if not os.path.exists("merlin"):
+                os.makedirs("merlin")
+            with zipfile.ZipFile("merlin.zip", "r") as zf:
+                zf.extractall("merlin")
+        except Exception as e:
+            log.warning(f"Unable to unpack Merlin32: {e}")
+    # generate the name of the assembler and the library directory
+    prefix = glob.glob("merlin/*")[0]
+    app = os.path.join(prefix, plat, "merlin32")
+    if plat.startswith("Win"):
+        app += ".exe"
+    libdir = os.path.join(prefix, "library")
+    log.info(f"Using Merlin32: {app} {libdir}")
+    return app, libdir
 
 
 parser = argparse.ArgumentParser()
@@ -24,13 +64,8 @@ if args.verbose:
 log = logging.getLogger("build")
 logging.basicConfig(filename=args.logfile, level=level)
 
-# Note: these paths are for local Windows installs.  All of these tools
-# can be installed under Linux as well, but these paths will need to change.
-assembler = ".\\merlin32\\windows\\merlin32.exe"
-assembler_libdir = ".\\merlin32\\library\\"
-ciderpresscli = ".\\ciderpress\\cp2.exe"
-
 # Check for all the tools to be present
+assembler, assembler_libdir = merlin_check(assembler, assembler_libdir)
 prerequisites = True
 for name in (assembler, assembler_libdir, ciderpresscli, ):
     if not os.path.exists(name):
