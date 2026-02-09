@@ -62,6 +62,7 @@ PTRIG       equ   $C070      ; Trigger (start) paddle measurement
 
 * ROM routines
 
+WAIT        equ   $FCA8
 REBOOT      equ   $e000
 
          org   $2000      ; start of all semi-well behaved .SYSTEM files
@@ -840,7 +841,7 @@ ImgWidthBytes
 ImgLengthLine
          dfb   $0b        ;Image length in lines
 ImageBytes
-         ds    18         ;Imagae for 'HISCORE"
+         ds    18         ;Image for 'HISCORE"
          dfb   $05
          dfb   $02
          dfb   $55
@@ -2751,12 +2752,49 @@ NewHiScore
          jsr   DrawDigit
          jmp   DisplayHighScore
 
+
+VertPos   dfb  0
+TitleDisp dfb  1
+TitleCnt  dfb  0
+
 DisplayHighScore
          jsr   HighScoreUpdate
-         sta   KBDSTRB
 
 StartTotally
-         lda   BUTN1
+         lda   #$00
+         jsr   DrawEmptyPlayfield
+         lda   #8
+         sta   VertPos
+:scroll  inc   VertPos
+         inc   VertPos
+         inc   VertPos
+         lda   VertPos       ; Ypos in rows
+         sta   $01
+         jsr   DrawGameTitle2
+         lda   VertPos
+         cmp   #$50
+         blt   :scroll
+         sta   KBDSTRB
+         lda   #20
+         sta   TitleCnt
+         lda   #1
+         sta   TitleDisp
+PollBgn  lda   #$ff
+         jsr   WAIT
+         dec   TitleCnt
+         bne   :ok
+         lda   #$00
+         jsr   DrawEmptyPlayfield
+         lda   #20
+         sta   TitleCnt
+         lda   TitleDisp
+         eor   #1
+         sta   TitleDisp
+         beq   :scores
+         jsr   DrawGameTitle
+         jmp   :ok
+:scores  jsr   DrawHiscores
+:ok      lda   BUTN1
          bmi   :stlevel
          lda   BUTN0
          bmi   :dojoy
@@ -2775,7 +2813,7 @@ StartTotally
          cmp   #$cb       ;'K'
          beq   :dokey
          cmp   #$eb       ;'k'
-         bne   StartTotally
+         bne   PollBgn
 :dokey   jsr   INITKBD
          jmp   PlayAGame
 
@@ -2783,19 +2821,16 @@ StartTotally
          cmp   #$be       ; >
          beq   :up
          cmp   #$bc       ; <
-         bne   StartTotally
+         bne   PollBgn
          dec   StartingLevel
          sta   KBDSTRB
-         jmp   StartTotally
+         jmp   PollBgn
 :up      inc   StartingLevel
          sta   KBDSTRB
-         jmp   StartTotally
+         jmp   PollBgn
 
 HighScoreUpdate
          jsr   DisplayHighList
-         lda   #$00
-         jsr   DrawEmptyPlayfield
-         jsr   DrawGameTitle
          lda   KBDSTRB
          jmp   SaveHS     ;Save highscore file
 
@@ -2930,10 +2965,11 @@ Noise    lda   SPKR
          rts
 
 DrawGameTitle
-         lda   #$04       ; Xpos in columns
-         sta   $00
          lda   #$50       ; Ypos in rows
          sta   $01
+DrawGameTitle2
+         lda   #$04       ; Xpos in columns
+         sta   $00
          lda   #>TitleImageMassdraw
          sta   GetTitleByte+2
          lda   #<TitleImageMassdraw
@@ -2961,8 +2997,11 @@ DrawGameTitle
 LastYRowCheck
          cpx   #$b3
          bne   @next
+         lda   $01
+         cmp   #$50
+         blt   :novers
          jsr   DrawVersion
-         rts
+:novers  rts
 
 GetTitleByte
          lda   $5700      ;Self modifying code address
@@ -3387,8 +3426,22 @@ NewHigh  nop
 
 :L65BC   dey
          bne   :L65AC
-L65BF    lda   #$10
+
+DrawHiscoresAndWait
+         jsr   DrawHiscores
+:waitkeyandret
+         jmp   WaitKeyOrBtn
+
+DrawHiscores
+         lda   #$08
+         sta   XTMP
+         lda   #$10
+         sta   YTMP
+         jsr   Draw_HiScore_Img
+         lda   #$10
          sta   TGTLO
+         lda   #>IOBUFFER       ; $XXff - end of the score buffer
+         sta   TGTHI
          ldy   #$01
          sty   MON_COLOR
 :next    lda   MON_COLOR
@@ -3405,12 +3458,10 @@ L65BF    lda   #$10
          adc   #$10
          sta   TGTLO
          cmp   #$b0
-         beq   :waitkeyandret
+         beq   :end
          inc   MON_COLOR
          jmp   :next
-
-:waitkeyandret
-         jmp   WaitKeyOrBtn
+:end     rts
 
 DrawHiscoreLine
          lda   #$0f
@@ -3486,7 +3537,7 @@ L665A    lda   TGTLO
          lda   $ef
          iny
          sta   (TGTLO),y
-         jmp   L65BF
+         jmp   DrawHiscoresAndWait
          
          ds    \
 
