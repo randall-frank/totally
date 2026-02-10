@@ -17,7 +17,7 @@ assembler_libdir = ".\\merlin\\Merlin32_v1.2_b2\\library\\"
 ciderpresscli = ".\\ciderpress\\cp2.exe"
 
 
-def merlin_check(app, libdir):
+def merlin_check(app, libdir, cpapp):
     # If merlin is present, do nothing
     if not os.path.exists("merlin"):
         # pull a version from the web
@@ -27,15 +27,32 @@ def merlin_check(app, libdir):
             _ = urllib.request.urlretrieve(url, "merlin.zip")
         except Exception as e:
             log.warning(f"Download failed: {e}")
-            return app, libdir
+            return app, libdir, cpapp
         # unpack
         try:
             if not os.path.exists("merlin"):
                 os.makedirs("merlin")
             with zipfile.ZipFile("merlin.zip", "r") as zf:
                 zf.extractall("merlin")
+            os.unlink("merlin.zip")
         except Exception as e:
             log.warning(f"Unable to unpack Merlin32: {e}")
+    if not os.path.exists("ciderpress"):
+        url = "https://github.com/fadden/CiderPress2/releases/download/v1.1.1/cp2_1.1.1_win-x86_sc.zip"
+        try:
+            log.info(f"Attempting to pull ciderpress from: {url}")
+            _ = urllib.request.urlretrieve(url, "ciderpress.zip")
+        except Exception as e:
+            log.warning(f"Download failed: {e}")
+            return app, libdir, cpapp
+        # unpack
+        try:
+            os.makedirs("ciderpress")
+            with zipfile.ZipFile("ciderpress.zip", "r") as zf:
+                zf.extractall("ciderpress")
+            os.unlink("ciderpress.zip")
+        except Exception as e:
+            log.warning(f"Unable to unpack ciderpress: {e}")
     # generate the name of the assembler and the library directory
     prefix = glob.glob("merlin/*")[0]
     app = os.path.join(prefix, plat, "merlin32")
@@ -43,7 +60,11 @@ def merlin_check(app, libdir):
         app += ".exe"
     libdir = os.path.join(prefix, "library")
     log.info(f"Using Merlin32: {app} {libdir}")
-    return app, libdir
+    cpapp = os.path.join("ciderpress", "cp2")
+    if plat.startswith("Win"):
+        cpapp += ".exe"
+    log.info(f"Using CiderPress2: {cpapp}")
+    return app, libdir, cpapp
 
 
 parser = argparse.ArgumentParser()
@@ -65,7 +86,7 @@ log = logging.getLogger("build")
 logging.basicConfig(filename=args.logfile, level=level)
 
 # Check for all the tools to be present
-assembler, assembler_libdir = merlin_check(assembler, assembler_libdir)
+assembler, assembler_libdir, ciderpresscli = merlin_check(assembler, assembler_libdir, ciderpresscli)
 prerequisites = True
 for name in (assembler, assembler_libdir, ciderpresscli, ):
     if not os.path.exists(name):
@@ -77,7 +98,7 @@ if not prerequisites:
 
 # Set the version number and start the build process
 # Must be 5 characters
-version = [1,3,2]
+version = [1,3,3]
 s=""
 for v in version:
     s += f"{int(v):02x}0a"

@@ -766,7 +766,11 @@ CharZ    dfb   $55
          dfb   $00
          dfb   $55
          dfb   $00
-         asc   'UUUUUUU'
+
+         asc   'UUUUUUU'  ; 26
+         dfb   $00
+         
+         dfb   $00        ; 27 = space
          dfb   $00
          dfb   $00
          dfb   $00
@@ -774,9 +778,8 @@ CharZ    dfb   $55
          dfb   $00
          dfb   $00
          dfb   $00
-         dfb   $00
-         dfb   $00
-         dfb   $00
+
+         dfb   $00        ; 28 = underscore
          dfb   $00
          dfb   $00
          dfb   $00
@@ -784,6 +787,7 @@ CharZ    dfb   $55
          dfb   $00
          dfb   $00
          dfb   $7f
+
          dfb   $ff
          dfb   $ff
          dfb   $00
@@ -792,6 +796,7 @@ CharZ    dfb   $55
          dfb   $ff
          dfb   $00
          dfb   $00
+
          dfb   $18
          dfb   $10
          dfb   $00
@@ -800,6 +805,7 @@ CharZ    dfb   $55
          dfb   $20
          dfb   $a5
          dfb   $18
+
          dfb   $a2
          dfb   $08
          dfb   $20
@@ -2451,13 +2457,18 @@ DrawGameOverImage
          bne   :nextline
          jmp   WaitKeyOrBtn
 
+WaitWasKey dfb 1
+
 WaitKeyOrBtn
+         lda   #0
+         sta   WaitWasKey ; return 0 if ended via BUTN{0,1}
          sta   KBDSTRB
 :loop    lda   KBD
-         bmi   :done
+         bmi   :donek
          lda   BUTN0
          bmi   :done
          jmp   :loop
+:donek   inc   WaitWasKey ; return 1 if ended via key
 :done    sta   KBDSTRB
 :loop2   lda   BUTN0      ; wait for button to be released
          bmi   :loop2
@@ -3413,7 +3424,7 @@ NextScore
 NewHigh  nop
          ldx   #$00
          ldy   #$0a
-:L65AC   tya
+:nextsc  tya
          asl   A
          asl   A
          asl   A
@@ -3421,11 +3432,11 @@ NewHigh  nop
          sta   TGTLO
          lda   (TGTLO,x)
          cmp   #$ff
-         bne   :L65BC
-         jmp   L665A
+         bne   :notdone
+         jmp   FoundSlot
 
-:L65BC   dey
-         bne   :L65AC
+:notdone dey
+         bne   :nextsc
 
 DrawHiscoresAndWait
          jsr   DrawHiscores
@@ -3523,7 +3534,8 @@ Draw2Digits
          jsr   DrawDigit2
          rts
 
-L665A    lda   TGTLO
+FoundSlot    
+         lda   TGTLO
          sta   MON_INVFLAG
          jsr   EnterNewInitials
          lda   MON_INVFLAG
@@ -3780,7 +3792,7 @@ DigitImgTable
 * Enter 3 chars (no back, etc)
 
 EnterNewInitials
-:rpt0    lda   #$0f
+:rpt0    lda   #$0f       ; Char position on screen: 0f,11,13
          sta   MON_CH
          jsr   InputOneInitialChar
          cmp   #27
@@ -3797,26 +3809,92 @@ EnterNewInitials
          beq   :rpt1
          rts
 
+* Draw underscore
+* Wait for keypresses
+* Store char and draw it
+* Return char - note: #27 is the "go back" character
+* If left arrow, etc, return #27 (the space character)
+* MON_CH is the letter being edited and its position: 0f,11,13
 InputOneInitialChar
+         jsr   GetOneInitial    ;  Note: #27 is "backspace" (and empty)
+         pha
+         lda   #27
+         sta   GLYPH
          lda   MON_CH
          sta   XTMP
-         lda   #$40
+         lda   #$42             ; clear a lower underscore
          sta   YTMP
-         lda   #$1c       ; underscore
-         sta   GLYPH
-         jsr   DrawChar
-         jsr   GetOneInitial   ;  Note: #27 is "backspace" (and empty)
+         jsr   DrawChar         ; draw GLYPH char
+         pla
          pha
          sta   GLYPH
          lda   MON_CH
          sta   XTMP
          lda   #$40
          sta   YTMP
-         jsr   DrawChar
-         pla
+         jsr   DrawChar         ; draw GLYPH char
+         pla                    ; return char in Acc
+         rts
+
+* 0=A,25=Z,26="solid space",27="backspace",28="underscore"
+joykey   dfb   0
+GetOneKeyJoy
+         lda   #0
+         sta   joykey
+:loop    lda   MON_CH           ; draw underscore
+         sta   XTMP
+         lda   #$42             ; Y row of top of text
+         sta   YTMP
+         lda   #28              ; underscore is #28
+         sta   GLYPH
+         jsr   DrawChar         ; draw GLYPH char
+         lda   MON_CH           ; draw the current joykey
+         sta   XTMP
+         lda   #$40             ; Y row of top of text
+         sta   YTMP
+         lda   joykey
+         sta   GLYPH
+         jsr   DrawChar         ; draw GLYPH char
+         jsr   JoystickRead
+         ldy   joykey
+         lda   JOY_X
+         beq   :down
+         cmp   #2
+         bne   :btnchk
+         iny
+         cpy   #27
+         bne   :ok0
+         ldy   #0
+:ok0     jmp   :ok1
+:down    dey
+         cpy   #$ff
+         bne   :ok1
+         ldy   #26
+:ok1     sty   joykey
+         lda   #$ff
+         jsr   WAIT  
+:btnchk  lda   BUTN1
+         bmi   :back
+         lda   BUTN0
+         bpl   :loop
+         bmi   :out
+:back    lda   BUTN1
+         bmi   :back
+         lda   #27
+         rts
+:out     lda   BUTN0
+         bmi   :out
+         lda   joykey
          rts
 
 GetOneKey
+         lda   MON_CH           ; draw underscore
+         sta   XTMP
+         lda   #$40             ; Y row of top of text
+         sta   YTMP
+         lda   #28              ; underscore is #28
+         sta   GLYPH
+         jsr   DrawChar         ; draw GLYPH char
          sta   KBDSTRB
 :wait    lda   KBD
          bpl   :wait
@@ -3826,7 +3904,7 @@ GetOneKey
          beq   :backsp
          cmp   #$a0
          bne   :haveachar
-         lda   #$1a
+         lda   #26        ; space is 26 (solid)
          rts
 :backsp  lda   #27
          rts
@@ -3851,9 +3929,14 @@ GetOneKey
 :done    txa
          rts
 
+* Based on WaitWasKey, look at keyboard or joystick
 GetOneInitial
+         lda   WaitWasKey ; if "game over" ended via joy, use joy for char
+         beq   :usejoy
          jsr   GetOneKey
-         pha
+         jmp   :havechr
+:usejoy  jsr   GetOneKeyJoy
+:havechr pha
          lda   MON_CH     ;Store based on column...
          cmp   #$0f
          beq   :leftchar
