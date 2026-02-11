@@ -12,9 +12,19 @@ import zipfile
 # Note: these paths are for local Windows installs.  All of these tools
 # can be installed under Linux as well, but these paths will need to change.
 plat = platform.system()
-assembler = ".\\merlin\\Merlin32_v1.2_b2\\windows\\merlin32.exe"
-assembler_libdir = ".\\merlin\\Merlin32_v1.2_b2\\library\\"
-ciderpresscli = ".\\ciderpress\\cp2.exe"
+assembler = "./merlin/Merlin32_v1.2_b2/windows/merlin32.exe"
+assembler_libdir = "./merlin/Merlin32_v1.2_b2/library/"
+ciderpresscli = "./ciderpress/cp2.exe"
+
+
+def fix_perms(extracted_path):
+    # Ok, this really sucks.  Under Linux, the Merlin and Ciderpress zip files
+    # do not have "execute" permissions set.  Moreover, the Python zipfile module
+    # extractall() method does not properly restore them.  So, we just assume all
+    # the files should be +x.  I'm not happy with this at all.
+    if plat.startswith("Win"):
+        return
+    subprocess.Popen(["chmod", "-R", "+x", extracted_path])
 
 
 def merlin_check(app, libdir, cpapp):
@@ -34,11 +44,14 @@ def merlin_check(app, libdir, cpapp):
                 os.makedirs("merlin")
             with zipfile.ZipFile("merlin.zip", "r") as zf:
                 zf.extractall("merlin")
+                fix_perms("merlin")
             os.unlink("merlin.zip")
         except Exception as e:
             log.warning(f"Unable to unpack Merlin32: {e}")
     if not os.path.exists("ciderpress"):
-        url = "https://github.com/fadden/CiderPress2/releases/download/v1.1.1/cp2_1.1.1_win-x86_sc.zip"
+        url = "https://github.com/fadden/CiderPress2/releases/download/v1.1.1/cp2_1.1.1_linux-x64_sc.zip"
+        if plat.startswith("Win"):
+            url = "https://github.com/fadden/CiderPress2/releases/download/v1.1.1/cp2_1.1.1_win-x86_sc.zip"
         try:
             log.info(f"Attempting to pull ciderpress from: {url}")
             _ = urllib.request.urlretrieve(url, "ciderpress.zip")
@@ -50,15 +63,16 @@ def merlin_check(app, libdir, cpapp):
             os.makedirs("ciderpress")
             with zipfile.ZipFile("ciderpress.zip", "r") as zf:
                 zf.extractall("ciderpress")
+                fix_perms("ciderpress")
             os.unlink("ciderpress.zip")
         except Exception as e:
             log.warning(f"Unable to unpack ciderpress: {e}")
     # generate the name of the assembler and the library directory
     prefix = glob.glob("merlin/*")[0]
-    app = os.path.join(prefix, plat, "merlin32")
+    app = os.path.join(prefix, plat, "Merlin32")
     if plat.startswith("Win"):
         app += ".exe"
-    libdir = os.path.join(prefix, "library")
+    libdir = os.path.join(prefix, "Library")
     log.info(f"Using Merlin32: {app} {libdir}")
     cpapp = os.path.join("ciderpress", "cp2")
     if plat.startswith("Win"):
@@ -161,19 +175,20 @@ if mode == "release":
     log.info(f"System files added to disk image: {result.stdout} {result.stderr}")
     
 
-for name in os.listdir("basic"):
-    if name.upper().endswith(".ABAS"):
-        root = os.path.splitext(name)[0]
-        try:
+if os.path.exists("basic"):
+    for name in os.listdir("basic"):
+        if name.upper().endswith(".ABAS"):
+            root = os.path.splitext(name)[0]
+            try:
+                os.remove(os.path.join("basic", root))
+            except Exception:
+                pass
+            # make a temp copy to rename the file so the import is clean
+            shutil.copy(os.path.join("basic", name), os.path.join("basic", root))
+            cmd = [ciderpresscli, "import", "--strip-paths", rel_filename, "bas",  f"basic/{root}"]
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
             os.remove(os.path.join("basic", root))
-        except Exception:
-            pass
-        # make a temp copy to rename the file so the import is clean
-        shutil.copy(os.path.join("basic", name), os.path.join("basic", root))
-        cmd = [ciderpresscli, "import", "--strip-paths", rel_filename, "bas",  f"basic/{root}"]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        os.remove(os.path.join("basic", root))
-        log.info(f"Imported: basic/{name} as {root}")
+            log.info(f"Imported: basic/{name} as {root}")
 
 for name in os.listdir("bin"):
     if not name.startswith("_"):
